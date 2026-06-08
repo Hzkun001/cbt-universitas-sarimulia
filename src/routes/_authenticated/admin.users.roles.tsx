@@ -1,0 +1,140 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { configRepo, usersRepo, topikRepo, modulRepo } from "@/lib/cbt/repos";
+import { NAV_KEYS, type NavKey, type User } from "@/lib/cbt/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+
+const LABEL: Record<NavKey, string> = {
+  dashboard: "Dashboard",
+  users: "Pengguna",
+  peserta: "Peserta",
+  modul: "Bank Soal",
+  files: "File Manager",
+  ujian: "Paket Ujian",
+  hasil: "Hasil",
+  evaluasi: "Evaluasi Essay",
+  laporan: "Laporan",
+  leaderboard: "Leaderboard",
+  pengaturan: "Pengaturan",
+  tools: "Backup & Tools",
+};
+
+export const Route = createFileRoute("/_authenticated/admin/users/roles")({
+  component: RolesPage,
+});
+
+function RolesPage() {
+  const [cfg, setCfg] = useState(configRepo.get());
+  const operatorAccess = (cfg.roleAccess.operator ?? []) as NavKey[];
+  const operators = usersRepo.all().filter((u) => u.role === "operator");
+  const moduls = modulRepo.all();
+  const topiks = topikRepo.all();
+
+  function toggleNav(key: NavKey) {
+    const has = operatorAccess.includes(key);
+    const next = has ? operatorAccess.filter((x) => x !== key) : [...operatorAccess, key];
+    const c = { ...cfg, roleAccess: { ...cfg.roleAccess, operator: next } };
+    configRepo.set(c);
+    setCfg(c);
+  }
+
+  function toggleTopik(u: User, topikId: string) {
+    const has = u.allowedTopikIds.includes(topikId);
+    const next = {
+      ...u,
+      allowedTopikIds: has
+        ? u.allowedTopikIds.filter((x) => x !== topikId)
+        : [...u.allowedTopikIds, topikId],
+    };
+    usersRepo.upsert(next);
+    toast.success("Hak akses topik disimpan");
+  }
+
+  return (
+    <div className="max-w-4xl space-y-4">
+      <div>
+        <Link to="/admin/users" className="text-sm text-muted-foreground hover:underline">
+          ← Pengguna
+        </Link>
+        <h1 className="text-2xl font-semibold tracking-tight">Hak Akses Role</h1>
+        <p className="text-sm text-muted-foreground">
+          Atur menu yang bisa diakses operator dan topik mana yang boleh dia kelola.
+        </p>
+      </div>
+
+      <Card>
+        <CardContent className="space-y-3 p-4">
+          <h3 className="font-medium">Menu yang bisa diakses operator (guru)</h3>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {NAV_KEYS.filter((k) => k !== "users" && k !== "pengaturan" && k !== "tools").map(
+              (k) => (
+                <label key={k} className="flex items-center gap-2 rounded border p-2 text-sm">
+                  <Checkbox
+                    checked={operatorAccess.includes(k)}
+                    onCheckedChange={() => toggleNav(k)}
+                  />
+                  {LABEL[k]}
+                </label>
+              ),
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Admin selalu memiliki akses penuh. Menu dengan ikon kunci (Pengguna, Pengaturan, Tools)
+            hanya untuk admin.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <h3 className="font-medium">Topik yang boleh dikelola operator</h3>
+          {operators.length === 0 && (
+            <p className="text-sm text-muted-foreground">Belum ada operator.</p>
+          )}
+          {operators.map((u) => (
+            <div key={u.id} className="rounded border p-3">
+              <div className="mb-2 font-medium">{u.namaLengkap}</div>
+              <div className="space-y-2">
+                {moduls.map((m) => {
+                  const ts = topiks.filter((t) => t.modulId === m.id);
+                  if (ts.length === 0) return null;
+                  return (
+                    <div key={m.id}>
+                      <div className="text-xs font-medium text-muted-foreground">{m.nama}</div>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {ts.map((t) => (
+                          <label
+                            key={t.id}
+                            className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs"
+                          >
+                            <Checkbox
+                              checked={u.allowedTopikIds.includes(t.id)}
+                              onCheckedChange={() => toggleTopik(u, t.id)}
+                            />
+                            {t.nama}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {u.allowedTopikIds.length === 0 && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  (Kosong = boleh akses semua topik)
+                </p>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Button asChild variant="outline">
+        <Link to="/admin/users">← Selesai</Link>
+      </Button>
+    </div>
+  );
+}
