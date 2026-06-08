@@ -1,0 +1,68 @@
+CBT-MAN Upgrade Non-Commercial License
+Copyright (c) 2026 mannnrachman
+
+1. Purpose
+
+This project is shared for learning, evaluation, internal organizational use,
+and collaborative improvement.
+
+The author created this upgraded version because the existing source material
+was genuinely helpful, and this repository is intended as an improved and
+more maintainable continuation in that spirit.
+
+2. Permission Granted
+
+Permission is granted, free of charge, to any person or organization obtaining
+a copy of this software and associated documentation files (the "Software") to:
+
+- use the Software for personal learning;
+- study and modify the Software;
+- run the Software for internal, non-commercial educational or organizational use;
+- share modifications or improvements under the same non-commercial spirit;
+- contribute fixes, features, or documentation back to this project.
+
+3. Commercial Use Prohibited
+
+You may not, without prior written permission from the author:
+
+- sell this Software;
+- resell copies of this Software;
+- sell access to this Software;
+- host this Software as a paid service or paid SaaS offering;
+- package this Software as a paid template, installation service, starter kit,
+  or commercial deployment bundle;
+- sublicense, distribute, or transfer this Software as part of a commercial
+  product or paid offering;
+- use this Software or a modified version of it in a way whose primary purpose
+  is direct commercial sale or monetized redistribution.
+
+For the avoidance of doubt: **selling this application is not allowed**.
+
+4. Redistribution
+
+If you redistribute this Software or modified versions of it, you must:
+
+- keep this license text;
+- preserve copyright and attribution notices;
+- clearly state that the software is provided under a non-commercial license;
+- clearly indicate if you modified the Software.
+
+5. No Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+6. Request for Respectful Use
+
+This repository exists because prior source material helped the author.
+Please respect that spirit by improving, learning from, and using the project
+responsibly — not by turning it into something to be sold.
+
+7. Contact
+
+For commercial licensing or alternative permission, contact the repository owner.

@@ -1,46 +1,71 @@
 # CBT-MAN Upgrade
 
-Aplikasi **Computer-Based Test (CBT)** untuk sekolah, dibangun dengan **TanStack Start + React + TypeScript + Prisma + SQLite**.
+CBT-MAN Upgrade is a **school-oriented Computer-Based Test (CBT)** application built with **TanStack Start, React, TypeScript, Prisma, and SQLite**.
 
-Project ini berfokus pada simulasi sistem CBT sekolah yang terasa nyata untuk kebutuhan:
-- preview produk
-- pengembangan fitur admin/peserta
-- uji alur ujian end-to-end
-- eksperimen migrasi dari penyimpanan lokal menuju persistence berbasis server
+This repository exists because the original available source was genuinely helpful to me. I used that help as a foundation, then upgraded and extended the application to make it more robust, more realistic for demos, and better suited for continued development.
 
-Saat ini project sudah memiliki **seed dummy realistis** dengan konteks sekolah Indonesia, sehingga dashboard admin, operator/guru, dan peserta bisa langsung dipakai untuk demo.
+This project is intended for:
+- product previews
+- feature development
+- admin / teacher / student workflow testing
+- local demo environments
+- experimentation with a gradual migration from browser-only storage to server-backed persistence
+
+It now includes a **realistic Indonesian-school demo dataset**, so the app feels like a living CBT system instead of an empty prototype.
+
+> **Important:** This project is shared for learning, internal use, evaluation, and further improvement.
+> **Selling this application, reselling copies, or offering it as a paid product/service is not allowed.**
 
 ---
 
-## Fitur Utama
+## Table of Contents
 
-- **Manajemen bank soal** berbasis `Modul → Topik → Soal`
-- Dukungan beberapa **tipe soal**:
-  - pilihan ganda (`pg`)
-  - multi jawaban (`multi`)
-  - benar/salah (`bs`)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Current Architecture Status](#current-architecture-status)
+- [Core Data Domains](#core-data-domains)
+- [Realistic Demo Seeder](#realistic-demo-seeder)
+- [Demo Accounts](#demo-accounts)
+- [Getting Started](#getting-started)
+- [Useful Scripts](#useful-scripts)
+- [Project Structure](#project-structure)
+- [How Data Flows](#how-data-flows)
+- [Recommended Verification](#recommended-verification)
+- [Contributing](#contributing)
+- [License and Usage Restrictions](#license-and-usage-restrictions)
+- [Acknowledgment](#acknowledgment)
+
+---
+
+## Features
+
+- **Question bank management** organized as `Module → Topic → Question`
+- Support for multiple **question types**:
+  - single-choice (`pg`)
+  - multiple-choice (`multi`)
+  - true/false (`bs`)
   - essay (`essay`)
-- **Manajemen ujian** dengan:
-  - durasi
-  - aturan skor benar/salah/kosong
-  - token ujian
-  - pembatasan grup peserta
-  - pengacakan soal dan jawaban
-  - fullscreen wajib
-  - deteksi pindah tab / anti-cheat dasar
-- **Sesi ujian peserta** dengan status:
-  - belum
-  - sedang
-  - selesai
-  - kedaluwarsa
-- **Penilaian essay manual** oleh admin/operator
-- **Hasil, evaluasi, laporan, leaderboard**, dan monitoring peserta
-- **Persistence server-side** menggunakan Prisma + SQLite
-- **Dummy dataset realistis** untuk preview lokal tanpa setup manual panjang
+- **Exam management** with:
+  - duration rules
+  - correct / incorrect / blank scoring
+  - exam tokens
+  - participant group restrictions
+  - question and answer shuffling
+  - required fullscreen mode
+  - tab-switch detection / basic anti-cheat controls
+- **Exam session lifecycle** with statuses:
+  - pending
+  - in progress
+  - finished
+  - expired
+- **Manual essay grading** for admin/operator roles
+- **Results, evaluation, reports, leaderboard, and participant monitoring**
+- **Server-side persistence** via Prisma + SQLite
+- **Realistic seeded demo data** for local previews and development
 
 ---
 
-## Stack
+## Tech Stack
 
 ### Frontend
 - [TanStack Start](https://tanstack.com/start)
@@ -62,25 +87,25 @@ Saat ini project sudah memiliki **seed dummy realistis** dengan konteks sekolah 
 
 ---
 
-## Status Arsitektur Saat Ini
+## Current Architecture Status
 
-Project ini memakai pendekatan **hybrid transitional architecture**:
+This project currently uses a **hybrid transitional architecture**:
 
-- **data utama CBT disimpan di server** melalui Prisma + SQLite
-- UI masih memakai **client-side repository/cache facade** di `src/lib/cbt/repos.ts`
-- mutasi data dilakukan secara **optimistic update** di cache, lalu dipersist ke server secara async
+- **core CBT data is stored on the server** using Prisma + SQLite
+- the UI still uses a **client-side repository/cache facade** in `src/lib/cbt/repos.ts`
+- mutations are handled through **optimistic client updates**, then persisted asynchronously to the server
 
-Artinya:
-- project ini **bukan lagi localStorage-only** untuk data inti
-- tapi juga **belum full server-driven per route**
+That means:
+- this is **no longer a localStorage-only app** for core business data
+- but it is also **not yet fully server-driven per route/page**
 
-Pendekatan ini dipilih agar migrasi dari arsitektur lama tetap bertahap sambil menjaga UI tetap berjalan.
+This approach keeps the old UI model working while allowing the system to migrate progressively to a more robust server-backed design.
 
 ---
 
-## Domain Data
+## Core Data Domains
 
-Model utama saat ini mencakup:
+The current application models include:
 
 - `Group`
 - `User`
@@ -93,43 +118,43 @@ Model utama saat ini mencakup:
 - `SesiUjian`
 - `AppConfig`
 
-Skema Prisma ada di:
+Database schema:
 - `prisma/schema.prisma`
 
 ---
 
-## Seeder Dummy Realistis
+## Realistic Demo Seeder
 
-Seeder sudah di-upgrade agar seluruh preview aplikasi terasa seperti sistem sekolah nyata.
+The seeding system has been upgraded so the application feels like a real school CBT deployment during preview and testing.
 
-Cakupan seed saat ini:
-- beberapa **kelas/grup**
-- akun **admin**, **operator**, **guru**, dan **peserta**
-- modul Matematika, Fisika, dan Biologi
-- topik-topik turunan yang relevan
-- soal objektif + essay
-- beberapa ujian dengan konfigurasi berbeda
-- token ujian aktif/nonaktif
-- sesi peserta dengan kondisi beragam:
-  - belum mulai
-  - sedang mengerjakan
-  - selesai
-  - sudah dinilai
-  - essay belum sepenuhnya dinilai
+Current seeded coverage includes:
+- multiple **class groups**
+- demo accounts for **admin**, **operator**, **teachers**, and **students**
+- Mathematics, Physics, and Biology modules
+- realistic topic breakdowns
+- objective and essay questions
+- multiple exams with different configurations
+- active and unused exam tokens
+- participant sessions in different states:
+  - not started
+  - currently in progress
+  - completed
+  - graded
+  - partially graded essay workflows
 
-Sumber seed terpusat di:
+The shared seed source is centralized in:
 - `src/lib/server/db/seed-shared.mjs`
 
-Entry Prisma seed:
+Prisma seed entry point:
 - `prisma/seed.mjs`
 
-Tujuannya supaya **jalur seed CLI** dan **jalur seed server** tidak drift.
+This keeps the **CLI seed path** and **server-side seed path** aligned, so they do not drift over time.
 
 ---
 
-## Akun Demo
+## Demo Accounts
 
-> Data seed bisa berubah seiring pengembangan, tapi akun default berikut disiapkan oleh seed saat ini.
+> Seed data may evolve, but the following default accounts are currently created by the shared seed dataset.
 
 ### Admin
 - `admin / admin123`
@@ -137,12 +162,12 @@ Tujuannya supaya **jalur seed CLI** dan **jalur seed server** tidak drift.
 ### Operator
 - `operator1 / operator123`
 
-### Guru
+### Teachers
 - `guru_mtk / guru123`
 - `guru_fisika / guru123`
 - `guru_biologi / guru123`
 
-### Peserta
+### Students
 - `alif.mahendra / peserta123`
 - `nayla.putri / peserta123`
 - `fajar.ramadhan / peserta123`
@@ -154,39 +179,40 @@ Tujuannya supaya **jalur seed CLI** dan **jalur seed server** tidak drift.
 
 ---
 
-## Menjalankan Project
+## Getting Started
 
-## 1. Install dependency
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-## 2. Siapkan database
+### 2. Prepare the database
 
-Pastikan `DATABASE_URL` mengarah ke SQLite. Project ini memakai Prisma config dari:
+Make sure `DATABASE_URL` points to a SQLite database.
 
+Relevant config:
 - `prisma.config.ts`
 
-Jika perlu, jalankan migrasi:
+If needed, run migrations:
 
 ```bash
 npm run prisma:migrate
 ```
 
-## 3. Seed database
+### 3. Seed the database
 
 ```bash
 npm run prisma:seed
 ```
 
-## 4. Jalankan mode development
+### 4. Start development mode
 
 ```bash
 npm run dev
 ```
 
-## 5. Build production
+### 5. Build for production testing
 
 ```bash
 npm run build
@@ -194,7 +220,7 @@ npm run build
 
 ---
 
-## Script Penting
+## Useful Scripts
 
 ```bash
 npm run dev
@@ -206,7 +232,7 @@ npm run prisma:migrate
 npm run prisma:seed
 ```
 
-Script pengecekan tambahan:
+Additional route validation:
 
 ```bash
 node scripts/check-admin-routes.mjs
@@ -214,50 +240,50 @@ node scripts/check-admin-routes.mjs
 
 ---
 
-## Struktur Folder Penting
+## Project Structure
 
 ```text
 prisma/
-  schema.prisma        # skema database
-  seed.mjs             # entry Prisma seeder
+  schema.prisma        # database schema
+  seed.mjs             # Prisma seeder entry point
 
 src/
-  components/          # komponen UI dan komponen CBT
+  components/          # UI and CBT-specific components
   lib/
     cbt/               # types, repos, auth, exam logic
-    server/            # server functions, db helpers, seed shared
-  routes/              # file-based routes TanStack Start
+    server/            # server functions, DB helpers, shared seed logic
+  routes/              # TanStack Start file-based routes
 
 scripts/
   check-admin-routes.mjs
 ```
 
-File yang paling penting untuk memahami alur project:
-- `src/lib/cbt/repos.ts` — facade repo/cache client
-- `src/lib/server/repos/functions.ts` — bridge persistence server
-- `src/lib/cbt/exam.ts` — pembentukan sesi dan penilaian ujian
-- `src/lib/server/db/seed-shared.mjs` — sumber dataset dummy utama
-- `prisma/schema.prisma` — model database
+Most important files to understand the system:
+- `src/lib/cbt/repos.ts` — client cache / repository facade
+- `src/lib/server/repos/functions.ts` — server persistence bridge
+- `src/lib/cbt/exam.ts` — exam session creation and grading logic
+- `src/lib/server/db/seed-shared.mjs` — main realistic demo dataset
+- `prisma/schema.prisma` — database model definitions
 
 ---
 
-## Alur Data Singkat
+## How Data Flows
 
-1. UI meng-hydrate data awal dari server snapshot
-2. Snapshot dimasukkan ke cache repo client
-3. Halaman admin/peserta membaca data dari repo tersebut
-4. Saat ada perubahan, cache diupdate dulu
-5. Perubahan lalu dipersist ke SQLite melalui server function
+1. The UI hydrates initial state from a server snapshot
+2. That snapshot is loaded into the client-side repo cache
+3. Admin and participant pages read data from that cache
+4. On mutation, the cache is updated first
+5. The change is then persisted to SQLite through server functions
 
-Konsekuensinya:
-- UX terasa cepat
-- tetapi ada risiko cache client tidak sinkron bila request persist gagal atau ada perubahan dari tab/perangkat lain
+Implications:
+- the UX feels fast
+- but client cache can become stale if persistence fails or if another tab/device changes the same data
 
 ---
 
-## Verifikasi yang Disarankan
+## Recommended Verification
 
-Setelah perubahan besar, jalankan:
+After major changes, run:
 
 ```bash
 npm run prisma:validate
@@ -269,40 +295,87 @@ npm run build
 
 ---
 
-## Catatan Penting
+## Notes and Limitations
 
-- Data inti CBT sudah berbasis **SQLite**, bukan lagi murni local storage.
-- Namun beberapa area masih merupakan sisa arsitektur browser-side / transisi.
-- Fitur file/audio masih perlu perhatian khusus bila ingin full server-side.
-- Build saat ini bisa menghasilkan warning chunk size dari Vite, tetapi itu **bukan blocker** untuk development lokal.
-
----
-
-## Roadmap Teknis yang Masuk Akal
-
-Beberapa langkah lanjutan yang relevan untuk project ini:
-
-- migrasi dari cache repo global ke loader/query yang lebih server-driven
-- perbaikan error handling pada optimistic mutation
-- invalidation/refetch setelah mutasi
-- penyempurnaan auth ke session/cookie server
-- migrasi file/audio dari browser storage ke server storage
-- penambahan pengujian otomatis untuk flow ujian dan evaluasi
+- Core CBT data is already backed by **SQLite**, not pure browser storage.
+- Some areas are still transitional remnants of the older browser-heavy architecture.
+- File/audio handling still needs special treatment if the app is pushed toward a fully server-side setup.
+- The current build may emit Vite chunk-size warnings, but these are **not blocking** for local development.
 
 ---
 
-## Cocok Untuk Siapa?
+## Technical Roadmap
 
-Project ini cocok untuk:
-- sekolah / institusi yang ingin prototipe CBT modern
-- developer yang ingin belajar alur ujian berbasis role
-- tim produk yang butuh demo realistis untuk admin dan peserta
-- eksperimen migrasi aplikasi frontend-heavy ke persistence server-side bertahap
+Reasonable next steps for this project include:
+
+- migrating from global client repo cache to more server-driven loaders/queries
+- improving error handling for optimistic mutations
+- adding invalidation/refetch behavior after writes
+- upgrading auth toward server sessions/cookies
+- moving file/audio storage from browser storage to server storage
+- adding automated tests for exam-taking and grading flows
 
 ---
 
-## Lisensi
+## Contributing
 
-Belum ditentukan.
+Contributions are welcome **as long as they respect the intent and restrictions of this repository**.
 
-Jika project ini akan dipublikasikan lebih luas, tambahkan file `LICENSE` sesuai kebutuhan.
+Please contribute in ways that improve the project for learning, internal usage, demos, maintenance, stability, accessibility, and feature quality.
+
+### Please do
+- open issues for bugs, inconsistencies, and UX problems
+- propose focused pull requests
+- improve typing, validation, tests, docs, or developer experience
+- improve performance and reliability
+- preserve the school-oriented CBT domain model unless a change is clearly discussed
+
+### Please do not
+- submit changes intended to turn this repository into a commercial resale package
+- remove attribution/context about the origin and upgrade purpose of this project
+- use contributed changes to justify selling this repository or derived copies
+
+### Recommended contribution flow
+1. Fork the repository
+2. Create a feature branch
+3. Make focused changes
+4. Run verification commands
+5. Open a pull request with clear notes
+
+---
+
+## License and Usage Restrictions
+
+This repository is released under a **custom non-commercial license**.
+
+### In plain language
+You may:
+- study the code
+- use it for learning
+- use it for internal evaluation
+- adapt it for non-commercial organizational or educational purposes
+- contribute improvements back
+
+You may **not**:
+- sell this application
+- resell copies of this repository
+- sell hosted versions of this application
+- package it as a paid template, SaaS, install service, or productized solution
+- sublicense it for commercial distribution
+
+If you need different usage rights, contact the repository owner first.
+
+See the full license text in:
+- `LICENSE`
+
+---
+
+## Acknowledgment
+
+I built this upgrade because the existing source helped me a lot.
+
+This repository is my way of giving back through improvements: better persistence, better demo data, stronger runtime safety, and a more maintainable CBT foundation.
+
+Please respect that spirit.
+
+**Do not sell this application.**
