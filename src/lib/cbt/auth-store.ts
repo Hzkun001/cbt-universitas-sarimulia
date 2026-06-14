@@ -8,7 +8,10 @@ type AuthState = {
   userId: string | null;
   user: User | null;
   hydrated: boolean;
-  login: (username: string, password: string) => Promise<{ ok: boolean; error?: string; role?: Role }>;
+  login: (
+    username: string,
+    password: string,
+  ) => Promise<{ ok: boolean; error?: string; role?: Role }>;
   logout: () => void;
   refresh: () => Promise<void>;
   setHydrated: () => void;
@@ -58,13 +61,24 @@ export const useAuthStore = create<AuthState>()(
         await hydrateRepos();
         if (!id) return;
         const u = usersRepo.byId(id) ?? null;
-        set({ user: u, userId: u?.id ?? null });
+        if (!u || !u.aktif) {
+          // User hilang atau dinonaktifkan di server → logout.
+          set({ userId: null, user: null });
+          return;
+        }
+        set({ user: u, userId: u.id });
       },
     }),
     {
       name: "cbtman:auth",
-      storage: createJSONStorage(() => (typeof window !== "undefined" ? window.localStorage : (undefined as never))),
-      partialize: (s) => ({ userId: s.userId, user: s.user }),
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? window.localStorage : (undefined as never),
+      ),
+      partialize: (s) => ({
+        userId: s.userId,
+        // Jangan persist passwordHash ke localStorage — hanya field non-sensitif untuk render/guard.
+        user: s.user ? { ...s.user, passwordHash: "" } : null,
+      }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();
         void state?.refresh();
