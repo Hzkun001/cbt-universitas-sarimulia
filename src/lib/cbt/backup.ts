@@ -1,5 +1,6 @@
 // Backup / restore snapshot CBT berbasis database server.
 import { z } from "zod";
+import { toast } from "sonner";
 import {
   usersRepo,
   groupsRepo,
@@ -74,14 +75,18 @@ export async function exportBackup(): Promise<Backup> {
 }
 
 export async function downloadBackup(): Promise<void> {
-  const data = await exportBackup();
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `cbtman-backup-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  try {
+    const data = await exportBackup();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cbtman-backup-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    toast.error("Gagal export backup: " + (e instanceof Error ? e.message : String(e)));
+  }
 }
 
 export async function importBackup(raw: unknown): Promise<Backup> {

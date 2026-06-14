@@ -1,5 +1,5 @@
 import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
-import { extname, join, resolve } from "node:path";
+import { extname, join, resolve, sep } from "node:path";
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -155,8 +155,14 @@ export const importFilesServer = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await ensureUploadsDir();
     for (const item of data) {
+      // Cegah path traversal dari backup tidak terpercaya: validasi id & extension,
+      // dan pastikan path resolusi tetap di dalam uploadsDir.
+      if (!/^[A-Za-z0-9_-]+$/.test(item.id)) continue;
+      if (item.extension !== "" && !/^\.[A-Za-z0-9]{1,16}$/.test(item.extension)) continue;
+      const blobPath = resolve(filePath(item.id, item.extension));
+      if (!blobPath.startsWith(uploadsDir + sep)) continue;
       const buffer = Buffer.from(item.dataBase64, "base64");
-      await writeFile(filePath(item.id, item.extension), buffer);
+      await writeFile(blobPath, buffer);
       const meta: StoredFileRecord = {
         id: item.id,
         name: item.name,
