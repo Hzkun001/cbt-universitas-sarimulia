@@ -17,6 +17,15 @@ import { prisma } from "@/lib/server/db/prisma";
 import { parseJson, stringifyJson, toBigInt, toNumber } from "@/lib/server/db/json";
 import { uid } from "@/lib/server/db/id";
 import { createSeedDataset, seedDatabase } from "@/lib/server/db/seed-shared.mjs";
+import {
+  clearSessionCookie,
+  createSession,
+  deleteSession,
+  deleteSessionsForUser,
+  readSessionToken,
+  setSessionCookie,
+  validateSession,
+} from "@/lib/server/db/session";
 
 export type Snapshot = {
   users: User[];
@@ -55,6 +64,16 @@ function mapUser(row: Awaited<ReturnType<typeof prisma.user.findMany>>[number]):
     aktif: row.aktif,
     createdAt: Number(row.createdAt),
   };
+}
+
+/**
+ * Versi `mapUser` untuk jalur AUTENTIKASI (loginServer/validateSessionServer):
+ * `passwordHash` di-strip ("") agar tak pernah mencapai client store (frozen Never,
+ * menghindari regresi 7-4). `mapUser` (dengan hash) tetap dipakai untuk cache snapshot
+ * `usersRepo` yang diandalkan edit password admin.
+ */
+function publicUser(row: Awaited<ReturnType<typeof prisma.user.findMany>>[number]): User {
+  return { ...mapUser(row), passwordHash: "" };
 }
 
 function mapSoal(
@@ -221,7 +240,51 @@ export const loginServer = createServerFn({ method: "POST" })
     if (!user.aktif) return { ok: false as const, error: "Akun dinonaktifkan" };
     const ok = await verifyPassword(data.password, user.passwordHash);
     if (!ok) return { ok: false as const, error: "Password salah" };
-    return { ok: true as const, user: mapUser(user) };
+    // Buat sesi server-side + set cookie httpOnly. Cookie kini sumber otoritatif autentikasi.
+    const token = await createSession(user.id);
+    setSessionCookie(token);
+    return { ok: true as const, user: publicUser(user) };
+  });
+
+/**
+ * Validasi sesi dari cookie — dipanggil `_authenticated.beforeLoad` tiap navigasi
+ * route protected. Sumber otoritatif: cookie httpOnly → row Session → expiry + `aktif`.
+ * Fail-closed: bila throw (mis. DB bermasalah), anggap belum auth → beforeLoad redirect /login.
+ */
+export const validateSessionServer = createServerFn({ method: "POST" }).handler(async () => {
+  try {
+    // seedIfNeeded di dalam try: bila seed throw (DB kosong/gangguan), fail-closed → null.
+    await seedIfNeeded();
+    const userRow = await validateSession(readSessionToken());
+    return { user: userRow ? publicUser(userRow) : null };
+  } catch {
+    return { user: null };
+  }
+});
+
+/** Logout: hapus row Session + clear cookie. Sesi tak bisa dihidupkan ulang tanpa login baru. */
+export const logoutServer = createServerFn({ method: "POST" }).handler(async () => {
+  await seedIfNeeded();
+  await deleteSession(readSessionToken());
+  clearSessionCookie();
+  return { ok: true as const };
+});
+
+/**
+ * Admin: revoke semua sesi seorang user (force-logout instan, terpisah dari flag aktif).
+ * Cookie korban tetap di browser mereka, tapi row Session hilang → ditolak di navigasi berikut.
+ */
+export const revokeUserSessionsServer = createServerFn({ method: "POST" })
+  .validator(z.object({ userId: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await seedIfNeeded();
+    // Authorization: server fns adalah RPC — guard route tak cukup. Hanya admin boleh revoke.
+    const caller = await validateSession(readSessionToken());
+    if (!caller || caller.role !== "admin") {
+      return { ok: false as const, error: "Forbidden", deleted: 0 };
+    }
+    const deleted = await deleteSessionsForUser(data.userId);
+    return { ok: true as const, deleted };
   });
 
 export const mutateEntity = createServerFn({ method: "POST" })
