@@ -54,6 +54,19 @@ model User {
   group           Group?      @relation(fields: [groupId], references: [id])
   createdUjians   Ujian[]     @relation("UjianCreator")
   sesi            SesiUjian[] @relation("SesiPeserta")
+  sessions        Session[]   @relation("UserSessions")
+}
+
+/// Sesi login server-side. `id` = token opaque 256-bit (randomBytes hex),
+/// disimpan di cookie httpOnly. Dihapus saat logout/expiry/deaktivasi-revoke.
+model Session {
+  id        String   @id
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user      User     @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Modul {
