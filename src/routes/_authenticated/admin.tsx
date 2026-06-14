@@ -7,8 +7,8 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { useAuthStore } from "@/lib/cbt/auth-store";
-import { configRepo } from "@/lib/cbt/repos";
-import { type NavKey } from "@/lib/cbt/types";
+import { configRepo, hydrateRepos } from "@/lib/cbt/repos";
+import { type AppConfig, type NavKey, type Role } from "@/lib/cbt/types";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -28,44 +28,100 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/admin")({
-  beforeLoad: ({ context }) => {
-    const user = (context as { user: { role: string } }).user;
-    if (user.role === "peserta") throw redirect({ to: "/peserta" });
-  },
-  component: AdminLayout,
-});
+const ADMIN_ROUTE_RULES = {
+  root: { key: "dashboard", adminOnly: false, paths: ["/admin"] },
+  users: { key: "users", adminOnly: true, paths: ["/admin/users"] },
+  peserta: { key: "peserta", adminOnly: false, paths: ["/admin/peserta"] },
+  modul: { key: "modul", adminOnly: false, paths: ["/admin/modul", "/admin/topik"] },
+  files: { key: "files", adminOnly: false, paths: ["/admin/files"] },
+  ujian: { key: "ujian", adminOnly: false, paths: ["/admin/ujian"] },
+  hasil: { key: "hasil", adminOnly: false, paths: ["/admin/hasil"] },
+  evaluasi: { key: "evaluasi", adminOnly: false, paths: ["/admin/evaluasi"] },
+  laporan: { key: "laporan", adminOnly: false, paths: ["/admin/laporan"] },
+  leaderboard: { key: "leaderboard", adminOnly: false, paths: ["/admin/leaderboard"] },
+  pengaturan: { key: "pengaturan", adminOnly: true, paths: ["/admin/pengaturan"] },
+  tools: { key: "tools", adminOnly: true, paths: ["/admin/tools"] },
+} satisfies Record<string, { key: NavKey; adminOnly: boolean; paths: string[] }>;
+
+type AdminRouteRule = (typeof ADMIN_ROUTE_RULES)[keyof typeof ADMIN_ROUTE_RULES];
+type RouteUser = { role: Role };
 
 type NavItem = {
   to: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  key: NavKey;
   exact?: boolean;
-  adminOnly?: boolean;
 };
 
 const navItems: NavItem[] = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, key: "dashboard", exact: true },
-  { to: "/admin/users", label: "Pengguna", icon: Users, key: "users", adminOnly: true },
-  { to: "/admin/peserta", label: "Peserta", icon: GraduationCap, key: "peserta" },
-  { to: "/admin/peserta/online", label: "Peserta Online", icon: Activity, key: "peserta" },
-  { to: "/admin/modul", label: "Bank Soal", icon: BookOpen, key: "modul" },
-  { to: "/admin/files", label: "File Manager", icon: FolderOpen, key: "files" },
-  { to: "/admin/ujian", label: "Paket Ujian", icon: FileText, key: "ujian" },
-  { to: "/admin/hasil", label: "Hasil & Riwayat", icon: ClipboardList, key: "hasil" },
-  { to: "/admin/evaluasi", label: "Evaluasi Essay", icon: PenLine, key: "evaluasi" },
-  { to: "/admin/laporan", label: "Laporan", icon: BarChart3, key: "laporan" },
-  { to: "/admin/leaderboard", label: "Leaderboard", icon: Trophy, key: "leaderboard" },
-  {
-    to: "/admin/pengaturan",
-    label: "Pengaturan",
-    icon: Settings,
-    key: "pengaturan",
-    adminOnly: true,
-  },
-  { to: "/admin/tools", label: "Backup & Tools", icon: Wrench, key: "tools", adminOnly: true },
+  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/users", label: "Pengguna", icon: Users },
+  { to: "/admin/peserta", label: "Peserta", icon: GraduationCap },
+  { to: "/admin/peserta/online", label: "Peserta Online", icon: Activity },
+  { to: "/admin/modul", label: "Bank Soal", icon: BookOpen },
+  { to: "/admin/files", label: "File Manager", icon: FolderOpen },
+  { to: "/admin/ujian", label: "Paket Ujian", icon: FileText },
+  { to: "/admin/hasil", label: "Hasil & Riwayat", icon: ClipboardList },
+  { to: "/admin/evaluasi", label: "Evaluasi Essay", icon: PenLine },
+  { to: "/admin/laporan", label: "Laporan", icon: BarChart3 },
+  { to: "/admin/leaderboard", label: "Leaderboard", icon: Trophy },
+  { to: "/admin/pengaturan", label: "Pengaturan", icon: Settings },
+  { to: "/admin/tools", label: "Backup & Tools", icon: Wrench },
 ];
+
+function normalizedAdminPath(pathname: string) {
+  if (pathname === "/admin") return pathname;
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+
+function resolveAdminRouteRule(pathname: string): AdminRouteRule | null {
+  const normalized = normalizedAdminPath(pathname);
+  const rules = Object.values(ADMIN_ROUTE_RULES).flatMap((rule) =>
+    rule.paths.map((path) => ({ path, rule })),
+  );
+  const match = rules
+    .filter(({ path }) => normalized === path || normalized.startsWith(`${path}/`))
+    .sort((a, b) => b.path.length - a.path.length)[0];
+  return match?.rule ?? null;
+}
+
+function operatorAccessKeys(cfg: AppConfig) {
+  return new Set((cfg.roleAccess.operator ?? []) as NavKey[]);
+}
+
+export function canAccessAdminPath(user: RouteUser, pathname: string, cfg: AppConfig) {
+  if (user.role === "admin") return true;
+  if (user.role === "peserta") return false;
+  const rule = resolveAdminRouteRule(pathname);
+  if (!rule) return false;
+  if (rule.adminOnly) return false;
+  return operatorAccessKeys(cfg).has(rule.key);
+}
+
+function firstAllowedAdminPath(user: RouteUser, cfg: AppConfig) {
+  if (user.role === "admin") return "/admin";
+  const firstVisible = navItems.find((item) => canAccessAdminPath(user, item.to, cfg));
+  return firstVisible?.to ?? "/login";
+}
+
+export const Route = createFileRoute("/_authenticated/admin")({
+  beforeLoad: async ({ context, location }) => {
+    const user = (context as { user: RouteUser }).user;
+    if (user.role === "peserta") throw redirect({ to: "/peserta" });
+
+    try {
+      await hydrateRepos();
+    } catch {
+      // gunakan cache terakhir/default agar guard tetap deterministik
+    }
+
+    const cfg = configRepo.get();
+    if (!canAccessAdminPath(user, location.pathname, cfg)) {
+      throw redirect({ to: firstAllowedAdminPath(user, cfg) });
+    }
+  },
+  component: AdminLayout,
+});
 
 function AdminLayout() {
   const user = useAuthStore((s) => s.user)!;
@@ -74,13 +130,8 @@ function AdminLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const cfg = configRepo.get();
   const appName = cfg.appName;
-  const operatorAccess = (cfg.roleAccess.operator ?? []) as NavKey[];
 
-  const visible = navItems.filter((n) => {
-    if (n.adminOnly && user.role !== "admin") return false;
-    if (user.role === "operator") return operatorAccess.includes(n.key);
-    return true;
-  });
+  const visible = navItems.filter((item) => canAccessAdminPath(user, item.to, cfg));
 
   return (
     <div className="min-h-screen bg-muted/30">
