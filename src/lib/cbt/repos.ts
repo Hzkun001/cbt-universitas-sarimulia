@@ -1,4 +1,9 @@
-import { getCbtSnapshot, mutateEntity, saveConfigServer } from "@/lib/server/repos/functions";
+import {
+  getCbtSnapshot,
+  getPublicBootConfigServer,
+  mutateEntity,
+  saveConfigServer,
+} from "@/lib/server/repos/functions";
 import { toast } from "sonner";
 import type {
   AppConfig,
@@ -14,6 +19,10 @@ import type {
 } from "./types";
 
 type Snapshot = Awaited<ReturnType<typeof getCbtSnapshot>>;
+export type PublicBootConfig = Awaited<ReturnType<typeof getPublicBootConfigServer>>;
+
+type MutationResult = { ok: boolean; error?: string };
+type EntityName = "users" | "groups" | "modul" | "topik" | "soal" | "ujian" | "token" | "sesi";
 
 const DEFAULT_OPERATOR_NAV: NavKey[] = [
   "dashboard",
@@ -70,12 +79,17 @@ export async function hydrateRepos(): Promise<void> {
       .then((snapshot) => {
         applySnapshot(snapshot);
       })
-      .catch((e) => {
+      .catch((error) => {
         loadPromise = null;
-        throw e;
+        throw error;
       });
   }
+
   await loadPromise;
+}
+
+export async function loadPublicBootConfig(): Promise<PublicBootConfig> {
+  return getPublicBootConfigServer();
 }
 
 function upsertArrayItem<T extends { id: string }>(list: T[], item: T) {
@@ -84,14 +98,10 @@ function upsertArrayItem<T extends { id: string }>(list: T[], item: T) {
   else list.push(item);
 }
 
-type MutationResult = { ok: boolean; error?: string };
-
-type EntityName = "users" | "groups" | "modul" | "topik" | "soal" | "ujian" | "token" | "sesi";
-
 function notifyMutationFailure(entity: string, error: string): void {
   toast.error(`Gagal menyimpan ${entity}: ${error}`);
   invalidateReposCache();
-  void hydrateRepos();
+  void hydrateRepos().catch(() => undefined);
 }
 
 function runEntityMutation(
@@ -100,14 +110,14 @@ function runEntityMutation(
   payload: unknown,
 ): Promise<MutationResult> {
   return mutateEntity({ data: { entity, action, payload } })
-    .then((r) => {
-      if (!r.ok) notifyMutationFailure(entity, r.error);
-      return r;
+    .then((result) => {
+      if (!result.ok) notifyMutationFailure(entity, result.error);
+      return result;
     })
-    .catch((e) => {
-      const error = e instanceof Error ? e.message : String(e);
-      notifyMutationFailure(entity, error);
-      return { ok: false, error };
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      notifyMutationFailure(entity, message);
+      return { ok: false, error: message };
     });
 }
 
@@ -117,9 +127,11 @@ function createRepo<T extends { id: string }>(
   setList: (items: T[]) => void,
 ) {
   let pending: Promise<MutationResult> | null = null;
+
   function enqueue(action: "upsert" | "remove" | "bulkSet", payload: unknown): void {
     pending = Promise.resolve(pending).then(() => runEntityMutation(entity, action, payload));
   }
+
   return {
     all(): T[] {
       return getList().slice();
@@ -143,10 +155,10 @@ function createRepo<T extends { id: string }>(
       enqueue("bulkSet", items);
     },
     async flush(): Promise<MutationResult> {
-      const p = pending;
-      if (!p) return { ok: true };
-      const result = await p;
-      if (pending === p) pending = null;
+      const current = pending;
+      if (!current) return { ok: true };
+      const result = await current;
+      if (pending === current) pending = null;
       return result;
     },
   };
@@ -159,6 +171,7 @@ export const usersRepo = createRepo(
     cache.users = items;
   },
 );
+
 export const groupsRepo = createRepo(
   "groups",
   () => cache.groups,
@@ -166,6 +179,7 @@ export const groupsRepo = createRepo(
     cache.groups = items;
   },
 );
+
 export const modulRepo = createRepo(
   "modul",
   () => cache.modul,
@@ -173,6 +187,7 @@ export const modulRepo = createRepo(
     cache.modul = items;
   },
 );
+
 export const topikRepo = createRepo(
   "topik",
   () => cache.topik,
@@ -180,6 +195,7 @@ export const topikRepo = createRepo(
     cache.topik = items;
   },
 );
+
 export const soalRepo = createRepo(
   "soal",
   () => cache.soal,
@@ -187,6 +203,7 @@ export const soalRepo = createRepo(
     cache.soal = items;
   },
 );
+
 export const ujianRepo = createRepo(
   "ujian",
   () => cache.ujian,
@@ -194,6 +211,7 @@ export const ujianRepo = createRepo(
     cache.ujian = items;
   },
 );
+
 export const tokenRepo = createRepo(
   "token",
   () => cache.token,
@@ -201,6 +219,7 @@ export const tokenRepo = createRepo(
     cache.token = items;
   },
 );
+
 export const sesiRepo = createRepo(
   "sesi",
   () => cache.sesi,
@@ -213,14 +232,14 @@ let configPending: Promise<MutationResult> | null = null;
 
 function runConfigMutation(cfg: AppConfig): Promise<MutationResult> {
   return saveConfigServer({ data: cfg })
-    .then((r) => {
-      if (!r.ok) notifyMutationFailure("config", r.error);
-      return r;
+    .then((result) => {
+      if (!result.ok) notifyMutationFailure("config", result.error);
+      return result;
     })
-    .catch((e) => {
-      const error = e instanceof Error ? e.message : String(e);
-      notifyMutationFailure("config", error);
-      return { ok: false, error };
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      notifyMutationFailure("config", message);
+      return { ok: false, error: message };
     });
 }
 
@@ -233,10 +252,10 @@ export const configRepo = {
     configPending = Promise.resolve(configPending).then(() => runConfigMutation(cfg));
   },
   async flush(): Promise<MutationResult> {
-    const p = configPending;
-    if (!p) return { ok: true };
-    const result = await p;
-    if (configPending === p) configPending = null;
+    const current = configPending;
+    if (!current) return { ok: true };
+    const result = await current;
+    if (configPending === current) configPending = null;
     return result;
   },
 };

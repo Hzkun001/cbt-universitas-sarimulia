@@ -26,32 +26,37 @@ function PreUjian() {
 
   if (!user) return <div>Pengguna tidak ditemukan</div>;
   if (!ujian) return <div>Ujian tidak ditemukan</div>;
-  const sesiSelesai = sesiRepo.all().find((s) => s.ujianId === id && s.pesertaId === user.id && s.status === "selesai");
+
+  const currentUser = user;
+  const currentUjian = ujian;
+  const sesiSelesai = sesiRepo
+    .all()
+    .find((s) => s.ujianId === id && s.pesertaId === currentUser.id && s.status === "selesai");
 
   async function mulai() {
     if (!agree) { toast.error("Centang persetujuan dulu"); return; }
-    if (ujian.tokenAktif) {
+    if (currentUjian.tokenAktif) {
       const kode = token.trim().toUpperCase();
       if (kode.length === 0) { toast.error("Masukkan token"); return; }
       const tokenRow = tokenRepo.all().find(
-        (t) => t.ujianId === ujian.id && t.kode.toUpperCase() === kode,
+        (t) => t.ujianId === currentUjian.id && t.kode.toUpperCase() === kode,
       );
       if (!tokenRow) { toast.error("Token tidak valid untuk ujian ini"); return; }
-      if (tokenRow.dipakaiOleh && tokenRow.dipakaiOleh !== user.id) {
+      if (tokenRow.dipakaiOleh && tokenRow.dipakaiOleh !== currentUser.id) {
         toast.error("Token sudah dipakai peserta lain");
         return;
       }
       if (!tokenRow.dipakaiOleh) {
-        tokenRepo.upsert({ ...tokenRow, dipakaiOleh: user.id, dipakaiAt: Date.now() });
+        tokenRepo.upsert({ ...tokenRow, dipakaiOleh: currentUser.id, dipakaiAt: Date.now() });
       }
     }
-    if (ujian.fullscreenWajib) {
+    if (currentUjian.fullscreenWajib) {
       try { await document.documentElement.requestFullscreen(); } catch { /* ignore */ }
     }
-    const sesi = findOrCreateSesi(ujian.id, user.id);
-    const started = sesi.status === "sedang" ? sesi : startSesi(sesi, ujian);
+    const sesi = findOrCreateSesi(currentUjian.id, currentUser.id);
+    const started = sesi.status === "sedang" ? sesi : startSesi(sesi, currentUjian);
     sesiRepo.upsert(started);
-    navigate({ to: "/peserta/ujian/$id/kerjakan", params: { id: ujian.id } });
+    navigate({ to: "/peserta/ujian/$id/kerjakan", params: { id: currentUjian.id } });
   }
 
   return (

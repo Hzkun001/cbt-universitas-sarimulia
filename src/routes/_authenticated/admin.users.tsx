@@ -1,11 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usersRepo } from "@/lib/cbt/repos";
-import { revokeUserSessionsServer } from "@/lib/server/repos/functions";
-import { hashPassword } from "@/lib/cbt/hash";
+import { revokeUserSessionsServer, upsertUserServer } from "@/lib/server/repos/functions";
 import { uid } from "@/lib/cbt/storage";
 import type { Role, User } from "@/lib/cbt/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +14,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -109,12 +107,12 @@ function UsersPage() {
                           !confirm(
                             `Hentikan semua sesi aktif untuk ${u.username}? Mereka akan keluar paksa pada aktivitas berikutnya.`,
                           )
-                        )
+                        ) {
                           return;
+                        }
                         try {
                           const res = await revokeUserSessionsServer({ data: { userId: u.id } });
-                          if (res.ok)
-                            toast.success(`${res.deleted} sesi dihentikan untuk ${u.username}`);
+                          if (res.ok) toast.success(`${res.deleted} sesi dihentikan untuk ${u.username}`);
                           else toast.error(res.error ?? "Gagal menghentikan sesi");
                         } catch {
                           toast.error("Gagal menghentikan sesi");
@@ -154,64 +152,52 @@ function UserDialog({
   editing: User | null;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<{
-    username: string;
-    namaLengkap: string;
-    role: Role;
-    aktif: boolean;
-    password: string;
-  }>(() => ({
-    username: editing?.username ?? "",
-    namaLengkap: editing?.namaLengkap ?? "",
-    role: editing?.role ?? "operator",
-    aktif: editing?.aktif ?? true,
+  const [form, setForm] = useState({
+    username: "",
+    namaLengkap: "",
+    role: "operator" as Role,
+    aktif: true,
     password: "",
-  }));
+  });
 
-  // reset form when editing changes
-  useState(() => undefined);
-  // re-init when editing changes via open
-  if (open && editing && form.username !== editing.username) {
+  useEffect(() => {
+    if (!open) return;
     setForm({
-      username: editing.username,
-      namaLengkap: editing.namaLengkap,
-      role: editing.role,
-      aktif: editing.aktif,
+      username: editing?.username ?? "",
+      namaLengkap: editing?.namaLengkap ?? "",
+      role: editing?.role ?? "operator",
+      aktif: editing?.aktif ?? true,
       password: "",
     });
-  }
+  }, [editing, open]);
 
   async function save() {
     if (!form.username.trim() || !form.namaLengkap.trim()) {
       toast.error("Username dan nama wajib diisi");
       return;
     }
-    if (!editing && !form.password) {
-      toast.error("Password wajib diisi untuk akun baru");
+
+    const res = await upsertUserServer({
+      data: {
+        id: editing?.id ?? uid("u_"),
+        username: form.username.trim(),
+        namaLengkap: form.namaLengkap.trim(),
+        role: form.role,
+        aktif: form.aktif,
+        allowedTopikIds: editing?.allowedTopikIds ?? [],
+        groupId: editing?.groupId,
+        detail: editing?.detail,
+        createdAt: editing?.createdAt ?? Date.now(),
+        newPassword: form.password.trim() || undefined,
+      },
+    });
+
+    if (!res.ok) {
+      toast.error(res.error ?? "Gagal menyimpan pengguna");
       return;
     }
-    const passwordHash = form.password ? await hashPassword(form.password) : editing!.passwordHash;
 
-    const user: User = editing
-      ? {
-          ...editing,
-          username: form.username,
-          namaLengkap: form.namaLengkap,
-          role: form.role,
-          aktif: form.aktif,
-          passwordHash,
-        }
-      : {
-          id: uid("u_"),
-          username: form.username,
-          namaLengkap: form.namaLengkap,
-          role: form.role,
-          aktif: form.aktif,
-          passwordHash,
-          allowedTopikIds: [],
-          createdAt: Date.now(),
-        };
-    usersRepo.upsert(user);
+    usersRepo.upsert(res.user);
     toast.success(editing ? "Pengguna diperbarui" : "Pengguna ditambahkan");
     onSaved();
     onOpenChange(false);
@@ -226,10 +212,7 @@ function UserDialog({
         <div className="space-y-3">
           <div className="space-y-1">
             <Label>Username</Label>
-            <Input
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
-            />
+            <Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
           </div>
           <div className="space-y-1">
             <Label>Nama lengkap</Label>

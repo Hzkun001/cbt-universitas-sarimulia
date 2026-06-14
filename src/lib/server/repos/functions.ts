@@ -39,19 +39,52 @@ export type Snapshot = {
   config: AppConfig;
 };
 
-const roleSchema = z.enum(["admin", "operator", "peserta"]);
-const entitySchema = z.enum([
-  "users",
-  "groups",
-  "modul",
-  "topik",
-  "soal",
-  "ujian",
-  "token",
-  "sesi",
-]);
+export type PublicBootConfig = Pick<AppConfig, "appName" | "appDeskripsi" | "pesanLogin">;
 
-function mapUser(row: Awaited<ReturnType<typeof prisma.user.findMany>>[number]): User {
+type UserRow = Awaited<ReturnType<typeof prisma.user.findMany>>[number];
+type SoalRow = Awaited<ReturnType<typeof prisma.soal.findMany>>[number] & {
+  jawaban: { id: string; detail: string; benar: boolean }[];
+};
+type SnapshotRows = {
+  users: UserRow[];
+  groups: Group[];
+  modul: Modul[];
+  topik: Topik[];
+  soal: SoalRow[];
+  ujian: Awaited<ReturnType<typeof prisma.ujian.findMany>>;
+  token: Awaited<ReturnType<typeof prisma.tokenUjian.findMany>>;
+  sesi: Awaited<ReturnType<typeof prisma.sesiUjian.findMany>>;
+  config: Awaited<ReturnType<typeof prisma.appConfig.findUnique>>;
+};
+
+const roleSchema = z.enum(["admin", "operator", "peserta"]);
+const entitySchema = z.enum(["users", "groups", "modul", "topik", "soal", "ujian", "token", "sesi"]);
+const upsertUserSchema = z.object({
+  id: z.string().min(1),
+  username: z.string().min(3),
+  namaLengkap: z.string().min(1),
+  role: roleSchema,
+  allowedTopikIds: z.array(z.string()).default([]),
+  groupId: z.string().min(1).optional(),
+  detail: z.string().optional(),
+  aktif: z.boolean(),
+  createdAt: z.number().optional(),
+  newPassword: z.string().min(1).optional(),
+});
+
+const DEFAULT_OPERATOR_ROLE_ACCESS = [
+  "dashboard",
+  "peserta",
+  "modul",
+  "files",
+  "ujian",
+  "hasil",
+  "evaluasi",
+  "laporan",
+  "leaderboard",
+] as const;
+
+function mapUser(row: UserRow): User {
   return {
     id: row.id,
     username: row.username,
@@ -66,21 +99,11 @@ function mapUser(row: Awaited<ReturnType<typeof prisma.user.findMany>>[number]):
   };
 }
 
-/**
- * Versi `mapUser` untuk jalur AUTENTIKASI (loginServer/validateSessionServer):
- * `passwordHash` di-strip ("") agar tak pernah mencapai client store (frozen Never,
- * menghindari regresi 7-4). `mapUser` (dengan hash) tetap dipakai untuk cache snapshot
- * `usersRepo` yang diandalkan edit password admin.
- */
-function publicUser(row: Awaited<ReturnType<typeof prisma.user.findMany>>[number]): User {
+function publicUser(row: UserRow): User {
   return { ...mapUser(row), passwordHash: "" };
 }
 
-function mapSoal(
-  row: Awaited<ReturnType<typeof prisma.soal.findMany>>[number] & {
-    jawaban: { id: string; detail: string; benar: boolean }[];
-  },
-): Soal {
+function mapSoal(row: SoalRow): Soal {
   return {
     id: row.id,
     topikId: row.topikId,
@@ -120,6 +143,16 @@ function mapUjian(row: Awaited<ReturnType<typeof prisma.ujian.findMany>>[number]
   };
 }
 
+function mapToken(row: Awaited<ReturnType<typeof prisma.tokenUjian.findMany>>[number]): TokenUjian {
+  return {
+    id: row.id,
+    ujianId: row.ujianId,
+    kode: row.kode,
+    dipakaiOleh: row.dipakaiOleh ?? undefined,
+    dipakaiAt: toNumber(row.dipakaiAt),
+  };
+}
+
 function mapSesi(row: Awaited<ReturnType<typeof prisma.sesiUjian.findMany>>[number]): SesiUjian {
   return {
     id: row.id,
@@ -141,7 +174,29 @@ function mapSesi(row: Awaited<ReturnType<typeof prisma.sesiUjian.findMany>>[numb
   };
 }
 
-async function buildSnapshot(): Promise<Snapshot> {
+function buildConfig(config: SnapshotRows["config"]): AppConfig {
+  return {
+    appName: config?.appName ?? "CBT-MAN",
+    appDeskripsi: config?.appDeskripsi ?? "Aplikasi ujian berbasis komputer",
+    pesanLogin: config?.pesanLogin ?? "Selamat datang di aplikasi ujian online",
+    mobileLock: config?.mobileLock ?? false,
+    multiDevice: config?.multiDevice ?? false,
+    roleAccess: parseJson(config?.roleAccess, {
+      operator: [...DEFAULT_OPERATOR_ROLE_ACCESS],
+    }),
+  };
+}
+
+function buildPublicBootConfig(config: SnapshotRows["config"]): PublicBootConfig {
+  const full = buildConfig(config);
+  return {
+    appName: full.appName,
+    appDeskripsi: full.appDeskripsi,
+    pesanLogin: full.pesanLogin,
+  };
+}
+
+async function loadSnapshotRows(): Promise<SnapshotRows> {
   const [users, groups, modul, topik, soal, ujian, token, sesi, config] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.group.findMany({ orderBy: { nama: "asc" } }),
@@ -154,49 +209,94 @@ async function buildSnapshot(): Promise<Snapshot> {
     prisma.appConfig.findUnique({ where: { id: "app" } }),
   ]);
 
+  return { users, groups, modul, topik, soal, ujian, token, sesi, config };
+}
+
+function adminSnapshot(rows: SnapshotRows): Snapshot {
   return {
-    users: users.map(mapUser),
-    groups,
+    users: rows.users.map(publicUser),
+    groups: rows.groups,
+    modul: rows.modul,
+    topik: rows.topik,
+    soal: rows.soal.map(mapSoal),
+    ujian: rows.ujian.map(mapUjian),
+    token: rows.token.map(mapToken),
+    sesi: rows.sesi.map(mapSesi),
+    config: buildConfig(rows.config),
+  };
+}
+
+function operatorSnapshot(rows: SnapshotRows, caller: UserRow): Snapshot {
+  const unrestricted = (caller.allowedTopikIds?.length ?? 0) === 0;
+  const allowedTopikIds = unrestricted ? null : new Set(parseJson<string[]>(caller.allowedTopikIds, []));
+  const topik = allowedTopikIds ? rows.topik.filter((item) => allowedTopikIds.has(item.id)) : rows.topik;
+  const topikIds = new Set(topik.map((item) => item.id));
+  const modulIds = new Set(topik.map((item) => item.modulId));
+  const modul = unrestricted ? rows.modul : rows.modul.filter((item) => modulIds.has(item.id));
+  const soal = unrestricted ? rows.soal : rows.soal.filter((item) => topikIds.has(item.topikId));
+  const ujian = unrestricted
+    ? rows.ujian
+    : rows.ujian.filter((item) => parseJson<{ topikId: string }[]>(item.topicSets, []).some((set) => topikIds.has(set.topikId)));
+  const ujianIds = new Set(ujian.map((item) => item.id));
+  const sesi = rows.sesi.filter((item) => ujianIds.has(item.ujianId));
+  const token = rows.token.filter((item) => ujianIds.has(item.ujianId));
+  const visibleGroupIds = new Set(ujian.flatMap((item) => parseJson<string[]>(item.groupIds, [])));
+  const visiblePesertaIds = new Set(sesi.map((item) => item.pesertaId));
+  const includeAllPeserta = ujian.some((item) => parseJson<string[]>(item.groupIds, []).length === 0);
+  const users = rows.users.filter((item) => {
+    if (item.id === caller.id) return true;
+    if (item.role !== "peserta") return false;
+    if (includeAllPeserta) return true;
+    if (visiblePesertaIds.has(item.id)) return true;
+    return item.groupId ? visibleGroupIds.has(item.groupId) : false;
+  });
+
+  return {
+    users: users.map(publicUser),
+    groups: rows.groups,
     modul,
     topik,
     soal: soal.map(mapSoal),
     ujian: ujian.map(mapUjian),
-    token: token.map((row) => ({
-      id: row.id,
-      ujianId: row.ujianId,
-      kode: row.kode,
-      dipakaiOleh: row.dipakaiOleh ?? undefined,
-      dipakaiAt: toNumber(row.dipakaiAt),
-    })),
+    token: token.map(mapToken),
     sesi: sesi.map(mapSesi),
-    config: {
-      appName: config?.appName ?? "CBT-MAN",
-      appDeskripsi: config?.appDeskripsi ?? "Aplikasi ujian berbasis komputer",
-      pesanLogin: config?.pesanLogin ?? "Selamat datang di aplikasi ujian online",
-      mobileLock: config?.mobileLock ?? false,
-      multiDevice: config?.multiDevice ?? false,
-      roleAccess: parseJson(config?.roleAccess, {
-        operator: [
-          "dashboard",
-          "peserta",
-          "modul",
-          "files",
-          "ujian",
-          "hasil",
-          "evaluasi",
-          "laporan",
-          "leaderboard",
-        ],
-      }),
-    },
+    config: buildConfig(rows.config),
   };
+}
+
+function pesertaSnapshot(rows: SnapshotRows, caller: UserRow): Snapshot {
+  const ujian = rows.ujian.filter((item) => {
+    const groupIds = parseJson<string[]>(item.groupIds, []);
+    return groupIds.length === 0 || (!!caller.groupId && groupIds.includes(caller.groupId));
+  });
+  const ujianIds = new Set(ujian.map((item) => item.id));
+  const sesi = rows.sesi.filter((item) => item.pesertaId === caller.id && ujianIds.has(item.ujianId));
+  const soalIds = new Set(sesi.flatMap((item) => parseJson<string[]>(item.soalIds, [])));
+  const soal = rows.soal.filter((item) => soalIds.has(item.id));
+  const token = rows.token.filter((item) => ujianIds.has(item.ujianId));
+
+  return {
+    users: [publicUser(caller)],
+    groups: [],
+    modul: [],
+    topik: [],
+    soal: soal.map(mapSoal),
+    ujian: ujian.map(mapUjian),
+    token: token.map(mapToken),
+    sesi: sesi.map(mapSesi),
+    config: buildConfig(rows.config),
+  };
+}
+
+async function buildSnapshotForUser(caller: UserRow): Promise<Snapshot> {
+  const rows = await loadSnapshotRows();
+  if (caller.role === "admin") return adminSnapshot(rows);
+  if (caller.role === "operator") return operatorSnapshot(rows, caller);
+  return pesertaSnapshot(rows, caller);
 }
 
 let seedPromise: Promise<void> | null = null;
 
-// Single-flight: concurrent callers (mis. beberapa route loader + auth refresh
-// mengakses getCbtSnapshot di DB kosong) share satu in-flight seed, mencegah
-// race deleteMany/insert yang bisa saling menghapus data.
 function seedIfNeeded(): Promise<void> {
   if (!seedPromise) {
     seedPromise = (async () => {
@@ -223,7 +323,15 @@ function seedIfNeeded(): Promise<void> {
 
 export const getCbtSnapshot = createServerFn({ method: "GET" }).handler(async () => {
   await seedIfNeeded();
-  return buildSnapshot();
+  const caller = await validateSession(readSessionToken());
+  if (!caller) throw new Error("Unauthorized");
+  return buildSnapshotForUser(caller);
+});
+
+export const getPublicBootConfigServer = createServerFn({ method: "GET" }).handler(async () => {
+  await seedIfNeeded();
+  const config = await prisma.appConfig.findUnique({ where: { id: "app" } });
+  return buildPublicBootConfig(config);
 });
 
 export const ensureSeedServer = createServerFn({ method: "POST" }).handler(async () => {
@@ -240,20 +348,13 @@ export const loginServer = createServerFn({ method: "POST" })
     if (!user.aktif) return { ok: false as const, error: "Akun dinonaktifkan" };
     const ok = await verifyPassword(data.password, user.passwordHash);
     if (!ok) return { ok: false as const, error: "Password salah" };
-    // Buat sesi server-side + set cookie httpOnly. Cookie kini sumber otoritatif autentikasi.
     const token = await createSession(user.id);
     setSessionCookie(token);
     return { ok: true as const, user: publicUser(user) };
   });
 
-/**
- * Validasi sesi dari cookie — dipanggil `_authenticated.beforeLoad` tiap navigasi
- * route protected. Sumber otoritatif: cookie httpOnly → row Session → expiry + `aktif`.
- * Fail-closed: bila throw (mis. DB bermasalah), anggap belum auth → beforeLoad redirect /login.
- */
 export const validateSessionServer = createServerFn({ method: "POST" }).handler(async () => {
   try {
-    // seedIfNeeded di dalam try: bila seed throw (DB kosong/gangguan), fail-closed → null.
     await seedIfNeeded();
     const userRow = await validateSession(readSessionToken());
     return { user: userRow ? publicUser(userRow) : null };
@@ -262,7 +363,6 @@ export const validateSessionServer = createServerFn({ method: "POST" }).handler(
   }
 });
 
-/** Logout: hapus row Session + clear cookie. Sesi tak bisa dihidupkan ulang tanpa login baru. */
 export const logoutServer = createServerFn({ method: "POST" }).handler(async () => {
   await seedIfNeeded();
   await deleteSession(readSessionToken());
@@ -270,21 +370,71 @@ export const logoutServer = createServerFn({ method: "POST" }).handler(async () 
   return { ok: true as const };
 });
 
-/**
- * Admin: revoke semua sesi seorang user (force-logout instan, terpisah dari flag aktif).
- * Cookie korban tetap di browser mereka, tapi row Session hilang → ditolak di navigasi berikut.
- */
 export const revokeUserSessionsServer = createServerFn({ method: "POST" })
   .validator(z.object({ userId: z.string().min(1) }))
   .handler(async ({ data }) => {
     await seedIfNeeded();
-    // Authorization: server fns adalah RPC — guard route tak cukup. Hanya admin boleh revoke.
     const caller = await validateSession(readSessionToken());
     if (!caller || caller.role !== "admin") {
       return { ok: false as const, error: "Forbidden", deleted: 0 };
     }
     const deleted = await deleteSessionsForUser(data.userId);
     return { ok: true as const, deleted };
+  });
+
+export const upsertUserServer = createServerFn({ method: "POST" })
+  .validator(upsertUserSchema)
+  .handler(async ({ data }) => {
+    try {
+      await seedIfNeeded();
+      const caller = await validateSession(readSessionToken());
+      if (!caller || caller.role !== "admin") {
+        return { ok: false as const, error: "Forbidden" };
+      }
+
+      const existing = await prisma.user.findUnique({ where: { id: data.id } });
+      if (!existing && !data.newPassword) {
+        return { ok: false as const, error: "Password wajib diisi untuk akun baru" };
+      }
+
+      const passwordHash = data.newPassword
+        ? await hashPassword(data.newPassword)
+        : existing?.passwordHash ?? "";
+
+      const saved = await prisma.user.upsert({
+        where: { id: data.id },
+        update: {
+          username: data.username,
+          passwordHash,
+          namaLengkap: data.namaLengkap,
+          role: data.role,
+          allowedTopikIds: stringifyJson(data.allowedTopikIds),
+          groupId: data.groupId ?? null,
+          detail: data.detail ?? null,
+          aktif: data.aktif,
+        },
+        create: {
+          id: data.id,
+          username: data.username,
+          passwordHash,
+          namaLengkap: data.namaLengkap,
+          role: data.role,
+          allowedTopikIds: stringifyJson(data.allowedTopikIds),
+          groupId: data.groupId ?? null,
+          detail: data.detail ?? null,
+          aktif: data.aktif,
+          createdAt: BigInt(data.createdAt ?? Date.now()),
+        },
+      });
+
+      if (existing?.aktif === true && data.aktif === false) {
+        await deleteSessionsForUser(data.id);
+      }
+
+      return { ok: true as const, user: publicUser(saved) };
+    } catch (err) {
+      return { ok: false as const, error: err instanceof Error ? err.message : String(err) };
+    }
   });
 
 export const mutateEntity = createServerFn({ method: "POST" })
@@ -317,16 +467,19 @@ export const mutateEntity = createServerFn({ method: "POST" })
             }
           } else {
             const item = payload as User;
-            // Deteksi transisi deaktivasi (aktif true → false) utk revoke sesi instan (atomic dgn upsert).
             const prev = await tx.user.findUnique({
               where: { id: item.id },
-              select: { aktif: true },
+              select: { aktif: true, passwordHash: true },
             });
+            if (!prev && !item.passwordHash) {
+              throw new Error("Password wajib diisi untuk akun baru");
+            }
+            const nextPasswordHash = item.passwordHash || prev?.passwordHash || "";
             await tx.user.upsert({
               where: { id: item.id },
               update: {
                 username: item.username,
-                passwordHash: item.passwordHash,
+                passwordHash: nextPasswordHash,
                 namaLengkap: item.namaLengkap,
                 role: item.role,
                 allowedTopikIds: stringifyJson(item.allowedTopikIds),
@@ -338,7 +491,7 @@ export const mutateEntity = createServerFn({ method: "POST" })
               create: {
                 id: item.id,
                 username: item.username,
-                passwordHash: item.passwordHash,
+                passwordHash: nextPasswordHash,
                 namaLengkap: item.namaLengkap,
                 role: item.role,
                 allowedTopikIds: stringifyJson(item.allowedTopikIds),
@@ -348,7 +501,6 @@ export const mutateEntity = createServerFn({ method: "POST" })
                 createdAt: BigInt(item.createdAt),
               },
             });
-            // Revoke sesi instan saat deaktivasi (true → false); atomic dalam transaksi yang sama.
             if (prev?.aktif === true && item.aktif === false) {
               await tx.session.deleteMany({ where: { userId: item.id } });
             }

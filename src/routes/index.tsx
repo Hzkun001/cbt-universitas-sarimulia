@@ -1,6 +1,6 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { validateSessionServer } from "@/lib/server/repos/functions";
-import { configRepo, hydrateRepos } from "@/lib/cbt/repos";
+import { loadPublicBootConfig } from "@/lib/cbt/repos";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, ShieldCheck, ListChecks, Timer } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -17,7 +17,6 @@ export const Route = createFileRoute("/")({
     ],
   }),
   beforeLoad: async () => {
-    // Sudah punya sesi valid (cookie httpOnly)? → langsung ke area sesuai role.
     const { user } = await validateSessionServer();
     if (user) {
       throw redirect({ to: user.role === "peserta" ? "/peserta" : "/admin" });
@@ -31,10 +30,20 @@ function Landing() {
   const [appName, setAppName] = useState("CBT-MAN");
 
   useEffect(() => {
-    void hydrateRepos().then(() => {
-      setAppName(configRepo.get().appName);
-      setReady(true);
-    });
+    let active = true;
+    void loadPublicBootConfig()
+      .then((config) => {
+        if (!active) return;
+        setAppName(config.appName);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setReady(true);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (

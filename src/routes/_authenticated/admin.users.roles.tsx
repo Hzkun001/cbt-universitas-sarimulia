@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { configRepo, usersRepo, topikRepo, modulRepo } from "@/lib/cbt/repos";
+import { upsertUserServer } from "@/lib/server/repos/functions";
 import { NAV_KEYS, type NavKey, type User } from "@/lib/cbt/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,15 +42,28 @@ function RolesPage() {
     setCfg(c);
   }
 
-  function toggleTopik(u: User, topikId: string) {
+  async function toggleTopik(u: User, topikId: string) {
     const has = u.allowedTopikIds.includes(topikId);
-    const next = {
-      ...u,
-      allowedTopikIds: has
-        ? u.allowedTopikIds.filter((x) => x !== topikId)
-        : [...u.allowedTopikIds, topikId],
-    };
-    usersRepo.upsert(next);
+    const res = await upsertUserServer({
+      data: {
+        id: u.id,
+        username: u.username,
+        namaLengkap: u.namaLengkap,
+        role: u.role,
+        allowedTopikIds: has
+          ? u.allowedTopikIds.filter((x) => x !== topikId)
+          : [...u.allowedTopikIds, topikId],
+        groupId: u.groupId,
+        detail: u.detail,
+        aktif: u.aktif,
+        createdAt: u.createdAt,
+      },
+    });
+    if (!res.ok) {
+      toast.error(res.error ?? "Gagal menyimpan hak akses topik");
+      return;
+    }
+    usersRepo.upsert(res.user);
     toast.success("Hak akses topik disimpan");
   }
 

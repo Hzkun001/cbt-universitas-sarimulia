@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { hydrateRepos } from "@/lib/cbt/repos";
+import { loadPublicBootConfig } from "@/lib/cbt/repos";
 import { useAuthStore } from "@/lib/cbt/auth-store";
 import { validateSessionServer } from "@/lib/server/repos/functions";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ export const Route = createFileRoute("/login")({
     ],
   }),
   beforeLoad: async () => {
-    // Sudah punya sesi valid (cookie httpOnly + Session)? → langsung ke area sesuai role.
     const { user } = await validateSessionServer();
     if (user) throw redirect({ to: user.role === "peserta" ? "/peserta" : "/admin" });
   },
@@ -28,24 +27,42 @@ function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [appName, setAppName] = useState("CBT-MAN");
+  const [pesanLogin, setPesanLogin] = useState("Selamat datang di aplikasi ujian online");
   const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
 
   useEffect(() => {
-    void hydrateRepos();
+    let active = true;
+    void loadPublicBootConfig()
+      .then((config) => {
+        if (!active) return;
+        setAppName(config.appName);
+        setPesanLogin(config.pesanLogin);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const res = await login(username.trim(), password);
-    setBusy(false);
-    if (!res.ok) {
-      toast.error(res.error ?? "Gagal masuk");
-      return;
+    try {
+      const res = await login(username.trim(), password);
+      if (!res.ok) {
+        toast.error(res.error ?? "Gagal masuk");
+        return;
+      }
+      toast.success("Berhasil masuk");
+      navigate({ to: res.role === "peserta" ? "/peserta" : "/admin" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Gagal memuat data sesi");
+    } finally {
+      setBusy(false);
     }
-    toast.success("Berhasil masuk");
-    navigate({ to: res.role === "peserta" ? "/peserta" : "/admin" });
   }
 
   return (
@@ -55,8 +72,8 @@ function LoginPage() {
           <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-primary text-lg font-semibold text-primary-foreground">
             Z
           </div>
-          <CardTitle className="mt-3 text-2xl">Masuk ke CBT-MAN</CardTitle>
-          <CardDescription>Admin, guru, dan siswa masuk dari halaman ini</CardDescription>
+          <CardTitle className="mt-3 text-2xl">Masuk ke {appName}</CardTitle>
+          <CardDescription>{pesanLogin}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
