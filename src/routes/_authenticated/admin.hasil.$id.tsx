@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { ujianRepo, sesiRepo, usersRepo, soalRepo } from "@/lib/cbt/repos";
+import { ujianRepo, sesiRepo, usersRepo, soalRepo, hydrateRepos } from "@/lib/cbt/repos";
 import { recomputeSkor } from "@/lib/cbt/exam";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ import { RichView } from "@/components/cbt/RichEditor";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/hasil/$id")({
+  loader: async () => {
+    await hydrateRepos();
+  },
   component: HasilUjian,
 });
 
@@ -137,7 +140,10 @@ function HasilUjian() {
                   const soal = soalRepo.byId(j.soalId);
                   if (!soal) {
                     return (
-                      <div key={i} className="space-y-1 rounded border border-dashed p-3 text-sm text-muted-foreground">
+                      <div
+                        key={i}
+                        className="space-y-1 rounded border border-dashed p-3 text-sm text-muted-foreground"
+                      >
                         Soal #{i + 1} tidak ditemukan di bank soal saat ini.
                       </div>
                     );

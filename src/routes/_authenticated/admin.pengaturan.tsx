@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { configRepo } from "@/lib/cbt/repos";
+import { configRepo, hydrateRepos } from "@/lib/cbt/repos";
 import { ConfigSchema } from "@/lib/cbt/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,9 @@ import { Settings } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/pengaturan")({
+  loader: async () => {
+    await hydrateRepos();
+  },
   component: PengaturanPage,
 });
 
@@ -43,12 +46,17 @@ function PengaturanPage() {
       <Card>
         <CardHeader>
           <CardTitle>Identitas Aplikasi</CardTitle>
-          <CardDescription>Nama dan deskripsi yang ditampilkan di header dan login.</CardDescription>
+          <CardDescription>
+            Nama dan deskripsi yang ditampilkan di header dan login.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
             <Label>Nama aplikasi</Label>
-            <Input value={cfg.appName} onChange={(e) => setCfg({ ...cfg, appName: e.target.value })} />
+            <Input
+              value={cfg.appName}
+              onChange={(e) => setCfg({ ...cfg, appName: e.target.value })}
+            />
           </div>
           <div>
             <Label>Deskripsi</Label>

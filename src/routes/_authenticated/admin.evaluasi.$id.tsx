@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
-import { sesiRepo, ujianRepo, soalRepo, usersRepo } from "@/lib/cbt/repos";
+import { sesiRepo, ujianRepo, soalRepo, usersRepo, hydrateRepos } from "@/lib/cbt/repos";
 import { useAuthStore } from "@/lib/cbt/auth-store";
 import { recomputeSkor } from "@/lib/cbt/exam";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +12,9 @@ import { RichView } from "@/components/cbt/RichEditor";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/evaluasi/$id")({
+  loader: async () => {
+    await hydrateRepos();
+  },
   component: EvaluasiSesi,
 });
 
