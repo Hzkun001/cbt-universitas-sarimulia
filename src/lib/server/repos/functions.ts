@@ -173,21 +173,33 @@ async function buildSnapshot(): Promise<Snapshot> {
   };
 }
 
-async function seedIfNeeded() {
-  const count = await prisma.user.count();
-  if (count > 0) return;
+let seedPromise: Promise<void> | null = null;
 
-  const dataset = await createSeedDataset({
-    uid,
-    now: Date.now(),
-    hashPassword,
-  });
+// Single-flight: concurrent callers (mis. beberapa route loader + auth refresh
+// mengakses getCbtSnapshot di DB kosong) share satu in-flight seed, mencegah
+// race deleteMany/insert yang bisa saling menghapus data.
+function seedIfNeeded(): Promise<void> {
+  if (!seedPromise) {
+    seedPromise = (async () => {
+      const count = await prisma.user.count();
+      if (count > 0) return;
 
-  await seedDatabase({
-    prisma,
-    dataset,
-    stringifyJson,
-  });
+      const dataset = await createSeedDataset({
+        uid,
+        now: Date.now(),
+        hashPassword,
+      });
+
+      await seedDatabase({
+        prisma,
+        dataset,
+        stringifyJson,
+      });
+    })().finally(() => {
+      seedPromise = null;
+    });
+  }
+  return seedPromise;
 }
 
 export const getCbtSnapshot = createServerFn({ method: "GET" }).handler(async () => {
