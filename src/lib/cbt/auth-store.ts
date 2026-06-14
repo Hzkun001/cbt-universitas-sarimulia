@@ -58,8 +58,12 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ userId: null, user: null }),
       refresh: async () => {
         const id = get().userId;
-        await hydrateRepos();
         if (!id) return;
+        try {
+          await hydrateRepos();
+        } catch {
+          // Snapshot gagal; tetap validasi aktif dari cache terakhir (lebih baik daripada skip).
+        }
         const u = usersRepo.byId(id) ?? null;
         if (!u || !u.aktif) {
           // User hilang atau dinonaktifkan di server → logout.
