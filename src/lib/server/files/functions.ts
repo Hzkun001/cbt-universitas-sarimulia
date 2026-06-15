@@ -1,6 +1,3 @@
-import { mkdir, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
-import { extname, join, resolve, sep } from "node:path";
-
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -10,7 +7,7 @@ import { parseJson } from "@/lib/server/db/json";
 import { readSessionToken, validateSession } from "@/lib/server/db/session";
 import type { NavKey } from "@/lib/cbt/types";
 
-const uploadsDir = resolve(process.cwd(), "data", "uploads");
+const uploadsDir = [process.cwd(), "data", "uploads"] as const;
 const DEFAULT_OPERATOR_ROLE_ACCESS: NavKey[] = [
   "dashboard",
   "peserta",
@@ -41,21 +38,38 @@ const fileSchema = z.object({
   extension: z.string().default(""),
 });
 
+async function pathApi() {
+  return import("node:path");
+}
+
+async function fsApi() {
+  return import("node:fs/promises");
+}
+
+async function resolveUploadsDir() {
+  const { resolve } = await pathApi();
+  return resolve(...uploadsDir);
+}
+
 async function ensureUploadsDir() {
-  await mkdir(uploadsDir, { recursive: true });
+  const [{ mkdir }, baseDir] = await Promise.all([fsApi(), resolveUploadsDir()]);
+  await mkdir(baseDir, { recursive: true });
 }
 
-function filePath(id: string, extension: string) {
-  return join(uploadsDir, `${id}${extension}`);
+async function filePath(id: string, extension: string) {
+  const [{ join }, baseDir] = await Promise.all([pathApi(), resolveUploadsDir()]);
+  return join(baseDir, `${id}${extension}`);
 }
 
-function metaPath(id: string) {
-  return join(uploadsDir, `${id}.json`);
+async function metaPath(id: string) {
+  const [{ join }, baseDir] = await Promise.all([pathApi(), resolveUploadsDir()]);
+  return join(baseDir, `${id}.json`);
 }
 
 async function readMeta(id: string): Promise<StoredFileRecord | null> {
   try {
-    const raw = await readFile(metaPath(id), "utf8");
+    const [{ readFile }, target] = await Promise.all([fsApi(), metaPath(id)]);
+    const raw = await readFile(target, "utf8");
     return fileSchema.parse(JSON.parse(raw));
   } catch {
     return null;
@@ -64,13 +78,18 @@ async function readMeta(id: string): Promise<StoredFileRecord | null> {
 
 async function listMetas(): Promise<StoredFileRecord[]> {
   await ensureUploadsDir();
-  const entries = await readdir(uploadsDir);
+  const [{ readdir, readFile }, { join }, baseDir] = await Promise.all([
+    fsApi(),
+    pathApi(),
+    resolveUploadsDir(),
+  ]);
+  const entries = await readdir(baseDir);
   const metas = await Promise.all(
     entries
       .filter((entry) => entry.endsWith(".json"))
       .map(async (entry) => {
         try {
-          const raw = await readFile(join(uploadsDir, entry), "utf8");
+          const raw = await readFile(join(baseDir, entry), "utf8");
           return fileSchema.parse(JSON.parse(raw));
         } catch {
           return null;
@@ -128,6 +147,7 @@ export const uploadStoredFile = createServerFn({ method: "POST" })
     if (!auth.ok) throw new Error(auth.error);
 
     await ensureUploadsDir();
+    const [{ extname }, { writeFile }] = await Promise.all([pathApi(), fsApi()]);
     const id = uid("f_");
     const extension = extname(data.name).slice(0, 16);
     const buffer = Buffer.from(data.dataBase64, "base64");
@@ -140,8 +160,8 @@ export const uploadStoredFile = createServerFn({ method: "POST" })
       extension,
     };
 
-    await writeFile(filePath(id, extension), buffer);
-    await writeFile(metaPath(id), JSON.stringify(meta, null, 2));
+    await writeFile(await filePath(id, extension), buffer);
+    await writeFile(await metaPath(id), JSON.stringify(meta, null, 2));
     return meta;
   });
 
@@ -154,8 +174,9 @@ export const deleteStoredFile = createServerFn({ method: "POST" })
     const meta = await readMeta(data.id);
     if (!meta) return { ok: true as const };
 
-    await rm(filePath(meta.id, meta.extension), { force: true });
-    await rm(metaPath(meta.id), { force: true });
+    const { rm } = await fsApi();
+    await rm(await filePath(meta.id, meta.extension), { force: true });
+    await rm(await metaPath(meta.id), { force: true });
     return { ok: true as const };
   });
 
@@ -168,7 +189,10 @@ export const getStoredFileUrl = createServerFn({ method: "GET" })
     const meta = await readMeta(data.id);
     if (!meta) return null;
 
-    const absPath = filePath(meta.id, meta.extension);
+    const [{ stat, readFile }, absPath] = await Promise.all([
+      fsApi(),
+      filePath(meta.id, meta.extension),
+    ]);
     const info = await stat(absPath);
     if (!info.isFile()) return null;
 
@@ -194,9 +218,10 @@ export const exportFilesServer = createServerFn({ method: "GET" }).handler(async
   if (!auth.ok) throw new Error(auth.error);
 
   const metas = await listMetas();
+  const { readFile } = await fsApi();
   const files = await Promise.all(
     metas.map(async (meta) => {
-      const body = await readFile(filePath(meta.id, meta.extension));
+      const body = await readFile(await filePath(meta.id, meta.extension));
       return { ...meta, dataBase64: body.toString("base64") };
     }),
   );
@@ -210,11 +235,13 @@ export const importFilesServer = createServerFn({ method: "POST" })
     if (!auth.ok) return { ok: false as const, error: auth.error };
 
     await ensureUploadsDir();
+    const [{ resolve, sep }, { writeFile }] = await Promise.all([pathApi(), fsApi()]);
+    const baseDir = await resolveUploadsDir();
     for (const item of data) {
       if (!/^[A-Za-z0-9_-]+$/.test(item.id)) continue;
       if (item.extension !== "" && !/^\.[A-Za-z0-9]{1,16}$/.test(item.extension)) continue;
-      const blobPath = resolve(filePath(item.id, item.extension));
-      if (!blobPath.startsWith(uploadsDir + sep)) continue;
+      const blobPath = resolve(await filePath(item.id, item.extension));
+      if (!blobPath.startsWith(baseDir + sep)) continue;
       const buffer = Buffer.from(item.dataBase64, "base64");
       await writeFile(blobPath, buffer);
       const meta: StoredFileRecord = {
@@ -225,7 +252,7 @@ export const importFilesServer = createServerFn({ method: "POST" })
         createdAt: item.createdAt,
         extension: item.extension,
       };
-      await writeFile(metaPath(item.id), JSON.stringify(meta, null, 2));
+      await writeFile(await metaPath(item.id), JSON.stringify(meta, null, 2));
     }
     return { ok: true as const };
   });

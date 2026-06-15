@@ -52,6 +52,18 @@ export function extractFileIds(html: string): string[] {
 }
 
 async function fileToBase64(file: File): Promise<string> {
-  const buffer = await file.arrayBuffer();
-  return Buffer.from(buffer).toString("base64");
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error ?? new Error("Gagal membaca file"));
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result !== "string") {
+        reject(new Error("Format file tidak didukung"));
+        return;
+      }
+      const [, dataBase64 = ""] = result.split(",", 2);
+      resolve(dataBase64);
+    };
+    reader.readAsDataURL(file);
+  });
 }
