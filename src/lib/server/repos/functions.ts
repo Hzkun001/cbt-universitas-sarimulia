@@ -459,6 +459,26 @@ async function authorizeMutation(caller: UserRow | null, entity: z.infer<typeof 
       if (existing && (existing.pesertaId !== caller.id || existing.ujianId !== item.ujianId)) {
         return { ok: false, error: "Forbidden" };
       }
+      // Cegah peserta memulai/melanjutkan ujian di luar window beginAt/endAt.
+      // Peserta boleh tetap membuat sesi "belum" di luar window, tapi tidak boleh bertransisi ke "sedang".
+      if (item.status === "sedang") {
+        const ujian = await prisma.ujian.findUnique({
+          where: { id: item.ujianId },
+          select: { beginAt: true, endAt: true },
+        });
+        if (ujian) {
+          const beginAt = toNumber(ujian.beginAt);
+          const endAt = toNumber(ujian.endAt);
+          const now = Date.now();
+          if (beginAt !== undefined && now < beginAt) {
+            return { ok: false, error: "Ujian belum dimulai" };
+          }
+          if (endAt !== undefined && now > endAt) {
+            return { ok: false, error: "Ujian sudah berakhir" };
+          }
+        }
+      }
+
       return { ok: true };
     }
   }

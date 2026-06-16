@@ -3,13 +3,18 @@ import { useState } from "react";
 import { ujianRepo, sesiRepo, tokenRepo } from "@/lib/cbt/repos";
 import { useAuthStore } from "@/lib/cbt/auth-store";
 import { findOrCreateSesi, startSesi } from "@/lib/cbt/exam";
+import {
+  getExamAvailabilityMessage,
+  getExamAvailabilityStatus,
+  isExamAvailable,
+} from "@/lib/cbt/availability";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { RichView } from "@/components/cbt/RichEditor";
-import { Clock, AlertTriangle } from "lucide-react";
+import { Clock, AlertTriangle, CalendarClock, CalendarX } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/peserta/ujian/$id")({
   component: PreUjian,
@@ -31,12 +36,20 @@ function PreUjianContent({ user, ujian }: { user: NonNullable<ReturnType<typeof 
   const [token, setToken] = useState("");
   const [agree, setAgree] = useState(false);
   const tokenInputId = `token-ujian-${ujian.id}`;
+  const availability = getExamAvailabilityStatus(ujian);
+  const examAllowed = isExamAvailable(ujian);
+  const blockedMessage = getExamAvailabilityMessage(availability, ujian);
+  const BlockedIcon = availability === "upcoming" ? CalendarClock : CalendarX;
 
   const sesiSelesai = sesiRepo
     .all()
     .find((s) => s.ujianId === ujian.id && s.pesertaId === user.id && s.status === "selesai");
 
   async function mulai() {
+    if (!examAllowed) {
+      toast.error(blockedMessage || "Ujian tidak dapat dimulai saat ini");
+      return;
+    }
     if (!agree) { toast.error("Centang persetujuan dulu"); return; }
     if (ujian.tokenAktif) {
       const kode = token.trim().toUpperCase();
@@ -69,6 +82,19 @@ function PreUjianContent({ user, ujian }: { user: NonNullable<ReturnType<typeof 
       <Card><CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-2 text-sm"><Clock className="h-4 w-4" />Durasi {ujian.durasiMenit} menit · {ujian.topicSets.reduce((a, b) => a + b.jumlah, 0)} soal</div>
         <RichView html={ujian.deskripsi || "<p><em>Tidak ada deskripsi.</em></p>"} />
+        {!examAllowed && (
+          <div
+            role="alert"
+            data-testid="exam-availability-blocked"
+            className="rounded border border-destructive/30 bg-destructive/10 p-3 text-sm space-y-1"
+          >
+            <div className="flex items-center gap-2 font-medium">
+              <BlockedIcon className="h-4 w-4" />
+              {availability === "upcoming" ? "Ujian belum dimulai" : "Ujian sudah berakhir"}
+            </div>
+            <p className="text-xs text-muted-foreground">{blockedMessage}</p>
+          </div>
+        )}
         {sesiSelesai && (
           <div className="rounded border bg-accent p-3 text-sm">
             Anda sudah menyelesaikan ujian ini. <Link to="/peserta/ujian/$id/hasil" params={{ id: ujian.id }} className="text-primary underline">Lihat hasil</Link>.
@@ -93,7 +119,7 @@ function PreUjianContent({ user, ujian }: { user: NonNullable<ReturnType<typeof 
           <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
           Saya bersedia mengikuti ujian dengan jujur.
         </label>
-        <Button className="w-full" onClick={mulai} disabled={!!sesiSelesai}>Mulai Ujian</Button>
+        <Button className="w-full" onClick={mulai} disabled={!!sesiSelesai || !examAllowed}>Mulai Ujian</Button>
       </CardContent></Card>
     </div>
   );
