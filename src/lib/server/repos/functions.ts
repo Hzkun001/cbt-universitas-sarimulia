@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { randomBytes } from "node:crypto";
 
 import { hashPassword, verifyPassword } from "@/lib/cbt/hash";
 import type {
@@ -15,6 +16,7 @@ import type {
   User,
 } from "@/lib/cbt/types";
 import { prisma } from "@/lib/server/db/prisma";
+import { Prisma } from "@prisma/client";
 import { parseJson, stringifyJson, toBigInt, toNumber } from "@/lib/server/db/json";
 import { uid } from "@/lib/server/db/id";
 import { createSeedDataset, seedDatabase } from "@/lib/server/db/seed-shared.mjs";
@@ -489,6 +491,118 @@ function seedIfNeeded(): Promise<void> {
   }
   return seedPromise;
 }
+
+// ---------------------------------------------------------------------------
+// Token exam code generation (Issue #12)
+//
+// The old client-side path produced 6-char base-36 codes with `Math.random()`
+// (~31 bits of entropy, biased, no DB uniqueness check). Tokens are
+// exam-access secrets, so we generate them on the server with `randomBytes`
+// — the same primitive already used for session tokens in `db/session.ts`.
+//
+// Charset is uppercase A–Z + digits, intentionally excluding 0/O/1/I/L to
+// avoid transcription errors. The alphabet has 31 symbols, so we reduce
+// random bytes with `% 31` (rejection sampling keeps the distribution
+// uniform; the bias from a power-of-two modulo is irrelevant at this
+// alphabet size). `length` defaults to 12 chars → log2(31^12) ≈ 59 bits of
+// entropy, well above what 6-char base36 ever provided.
+// ---------------------------------------------------------------------------
+
+const TOKEN_CHARSET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // 31 chars, no 0/O/1/I/L
+const DEFAULT_TOKEN_LENGTH = 12;
+const MAX_TOKEN_COLLISION_RETRIES = 5;
+
+function generateTokenCode(length: number = DEFAULT_TOKEN_LENGTH): string {
+  // We need at least `length` chars from a 31-symbol alphabet.
+  // randomBytes(length) gives us ample raw material; one byte per char is
+  // wasteful but keeps the implementation trivial. Each byte is reduced
+  // mod 31 so every char maps to a valid alphabet symbol.
+  const bytes = randomBytes(length);
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    const byte = bytes[i];
+    if (byte === undefined) {
+      // Defensive: randomBytes(>=length) should never return undefined here.
+      throw new Error("randomBytes returned short buffer");
+    }
+    out += TOKEN_CHARSET.charAt(byte % TOKEN_CHARSET.length);
+  }
+  return out;
+}
+
+export function isValidTokenCode(code: string): boolean {
+  if (code.length === 0) return false;
+  for (const ch of code) {
+    if (!TOKEN_CHARSET.includes(ch)) return false;
+  }
+  return true;
+}
+
+export const generateExamTokensServer = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      ujianId: z.string().min(1),
+      jumlah: z.number().int().min(1).max(500),
+      length: z.number().int().min(8).max(32).optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await seedIfNeeded();
+    const caller = await requireCaller();
+    if (!caller) return { ok: false as const, error: "Unauthorized" };
+    if (caller.role !== "admin" && caller.role !== "operator") {
+      return { ok: false as const, error: "Forbidden" };
+    }
+
+    // Operators can only generate tokens for exams they can touch.
+    if (caller.role === "operator") {
+      if (!(await operatorCanTouchUjian(caller, data.ujianId))) {
+        return { ok: false as const, error: "Forbidden" };
+      }
+    }
+
+    const exam = await prisma.ujian.findUnique({ where: { id: data.ujianId } });
+    if (!exam) return { ok: false as const, error: "Ujian tidak ditemukan" };
+
+    const length = data.length ?? DEFAULT_TOKEN_LENGTH;
+    const created: TokenUjian[] = [];
+    let attempts = 0;
+    const maxAttempts = data.jumlah * (1 + MAX_TOKEN_COLLISION_RETRIES);
+
+    while (created.length < data.jumlah && attempts < maxAttempts) {
+      const code = generateTokenCode(length);
+      attempts++;
+      try {
+        const row = await prisma.tokenUjian.create({
+          data: {
+            id: uid("tk_"),
+            ujianId: data.ujianId,
+            kode: code,
+          },
+        });
+        created.push(mapToken(row));
+      } catch (err) {
+        // Unique constraint on (ujianId, kode) — retry with a fresh code.
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === "P2002"
+        ) {
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (created.length < data.jumlah) {
+      return {
+        ok: false as const,
+        error: `Gagal membuat token unik setelah ${maxAttempts} percobaan; berhasil ${created.length} dari ${data.jumlah}`,
+        created: created.length,
+      };
+    }
+
+    return { ok: true as const, tokens: created };
+  });
 
 export const getCbtSnapshot = createServerFn({ method: "GET" }).handler(async () => {
   await seedIfNeeded();
@@ -1004,13 +1118,36 @@ export const importBackupServer = createServerFn({ method: "POST" })
         });
       }
       if (data.token.length) {
-        await tx.tokenUjian.createMany({
-          data: (data.token as TokenUjian[]).map((item) => ({
-            ...item,
-            dipakaiOleh: item.dipakaiOleh ?? null,
-            dipakaiAt: toBigInt(item.dipakaiAt),
-          })),
-        });
+        // Backup imports can contain stale or duplicate token codes. The DB
+        // now enforces `@@unique([ujianId, kode])`, so a `createMany` that
+        // contains a duplicate would abort the whole transaction. We
+        // dedupe in-memory by (ujianId, kode) — keeping the last occurrence
+        // — and skip anything that already exists in the destination DB.
+        const seen = new Map<string, TokenUjian>();
+        for (const t of data.token as TokenUjian[]) {
+          seen.set(`${t.ujianId}::${t.kode}`, t);
+        }
+        const incoming = [...seen.values()];
+        const existingKeys = new Set(
+          (
+            await tx.tokenUjian.findMany({
+              where: { OR: incoming.map((t) => ({ ujianId: t.ujianId, kode: t.kode })) },
+              select: { ujianId: true, kode: true },
+            })
+          ).map((row) => `${row.ujianId}::${row.kode}`),
+        );
+        const toInsert = incoming.filter(
+          (t) => !existingKeys.has(`${t.ujianId}::${t.kode}`),
+        );
+        if (toInsert.length) {
+          await tx.tokenUjian.createMany({
+            data: toInsert.map((item) => ({
+              ...item,
+              dipakaiOleh: item.dipakaiOleh ?? null,
+              dipakaiAt: toBigInt(item.dipakaiAt),
+            })),
+          });
+        }
       }
       if (data.sesi.length) {
         await tx.sesiUjian.createMany({

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { ujianRepo, tokenRepo, usersRepo } from "@/lib/cbt/repos";
-import { uid } from "@/lib/cbt/storage";
+import { generateExamTokensServer } from "@/lib/server/repos/functions";
 import type { TokenUjian } from "@/lib/cbt/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,6 @@ export const Route = createFileRoute("/_authenticated/admin/ujian/$id/token")({
   component: TokenPage,
 });
 
-function genCode(): string {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
-}
-
 function TokenPage() {
   const { id } = useParams({ from: "/_authenticated/admin/ujian/$id/token" });
   const ujian = ujianRepo.byId(id);
@@ -26,22 +22,39 @@ function TokenPage() {
     tokenRepo.all().filter((t) => t.ujianId === id),
   );
   const [jumlah, setJumlah] = useState(10);
+  const [generating, setGenerating] = useState(false);
 
   function refresh() {
     setTokens(tokenRepo.all().filter((t) => t.ujianId === id));
   }
 
-  function generate() {
-    const existing = new Set(tokenRepo.all().map((t) => t.kode));
-    for (let i = 0; i < jumlah; i++) {
-      let kode = genCode();
-      while (existing.has(kode)) kode = genCode();
-      existing.add(kode);
-      const tok: TokenUjian = { id: uid("tk_"), ujianId: id, kode };
-      tokenRepo.upsert(tok);
+  async function generate() {
+    if (generating) return;
+    setGenerating(true);
+    try {
+      // Server-side crypto-random generation. The client never sees the
+      // random source — `randomBytes` is invoked inside the server function
+      // (see `generateExamTokensServer` in `src/lib/server/repos/functions.ts`).
+      const result = await generateExamTokensServer({
+        data: { ujianId: id, jumlah },
+      });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      // Persist the returned tokens into the client cache via the existing
+      // repo upsert path so the table re-renders.
+      for (const tok of result.tokens) {
+        tokenRepo.upsert(tok);
+      }
+      toast.success(`${result.tokens.length} token dibuat`);
+      refresh();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Gagal membuat token: ${message}`);
+    } finally {
+      setGenerating(false);
     }
-    toast.success(`${jumlah} token dibuat`);
-    refresh();
   }
 
   function copyAll() {
@@ -81,9 +94,9 @@ function TokenPage() {
               className="w-32"
             />
           </div>
-          <Button onClick={generate}>
+          <Button onClick={generate} disabled={generating}>
             <Plus className="mr-1 h-4 w-4" />
-            Generate
+            {generating ? "Membuat…" : "Generate"}
           </Button>
           <Button variant="outline" onClick={copyAll}>
             <Copy className="mr-1 h-4 w-4" />
