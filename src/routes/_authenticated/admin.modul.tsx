@@ -3,12 +3,7 @@ import { useRef, useState } from "react";
 import { z } from "zod";
 import { modulRepo, topikRepo, soalRepo } from "@/lib/cbt/repos";
 import { uid } from "@/lib/cbt/storage";
-import {
-  ModulSchema,
-  TopikSchema,
-  SoalSchema,
-  type Modul,
-} from "@/lib/cbt/types";
+import { ModulSchema, TopikSchema, SoalSchema, type Modul } from "@/lib/cbt/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,6 +79,10 @@ function ModulPage() {
   }
 
   async function importBank(file: File) {
+    if (!canEdit) {
+      toast.error("Import bank JSON hanya untuk admin / operator tanpa batasan topik");
+      return;
+    }
     try {
       const raw = JSON.parse(await file.text());
       const bank = BankSchema.parse(raw);
@@ -124,33 +123,37 @@ function ModulPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <input
-            ref={importRef}
-            type="file"
-            accept="application/json"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) importBank(f);
-              e.target.value = "";
-            }}
-          />
-          <Button variant="outline" onClick={() => importRef.current?.click()}>
-            <FileUp className="mr-1 h-4 w-4" />
-            Import Bank JSON
-          </Button>
-          <Link to="/admin/modul/import">
-            <Button variant="outline">
-              <Upload className="mr-1 h-4 w-4" />
-              Import Excel
-            </Button>
-          </Link>
-          <Link to="/admin/modul/import-word">
-            <Button variant="outline">
-              <FileText className="mr-1 h-4 w-4" />
-              Import Word
-            </Button>
-          </Link>
+          {canEdit && (
+            <>
+              <input
+                ref={importRef}
+                type="file"
+                accept="application/json"
+                hidden
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) importBank(f);
+                  e.target.value = "";
+                }}
+              />
+              <Button variant="outline" onClick={() => importRef.current?.click()}>
+                <FileUp className="mr-1 h-4 w-4" />
+                Import Bank JSON
+              </Button>
+              <Link to="/admin/modul/import">
+                <Button variant="outline">
+                  <Upload className="mr-1 h-4 w-4" />
+                  Import Excel
+                </Button>
+              </Link>
+              <Link to="/admin/modul/import-word">
+                <Button variant="outline">
+                  <FileText className="mr-1 h-4 w-4" />
+                  Import Word
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
 

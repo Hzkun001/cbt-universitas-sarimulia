@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import mammoth from "mammoth";
-import { modulRepo, topikRepo, soalRepo } from "@/lib/cbt/repos";
+import { soalRepo } from "@/lib/cbt/repos";
 import { uid } from "@/lib/cbt/storage";
 import type { Soal, Jawaban, TipeSoal } from "@/lib/cbt/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,9 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, Check } from "lucide-react";
+import { Upload, Check, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { RichView } from "@/components/cbt/RichEditor";
+import { useAuthStore } from "@/lib/cbt/auth-store";
+import { isTopikAllowed, visibleModuls, visibleTopiks } from "@/lib/cbt/access";
 
 export const Route = createFileRoute("/_authenticated/admin/modul/import-word")({
   component: ImportWord,
@@ -38,7 +40,10 @@ function parseDocxText(text: string): Parsed[] {
 
   const out: Parsed[] = [];
   for (const block of blocks) {
-    const lines = block.split(/\n/).map((l) => l.trim()).filter(Boolean);
+    const lines = block
+      .split(/\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
     if (!lines.length) continue;
     const detailLines: string[] = [];
     const opsi: { huruf: string; teks: string }[] = [];
@@ -54,7 +59,10 @@ function parseDocxText(text: string): Parsed[] {
         detailLines.push(ln);
       }
     }
-    const detail = detailLines.join(" ").replace(/^\d+[.)]\s*/, "").trim();
+    const detail = detailLines
+      .join(" ")
+      .replace(/^\d+[.)]\s*/, "")
+      .trim();
     if (!detail) continue;
     if (opsi.length === 0) {
       out.push({ detail, tipe: "essay", jawaban: [], benarIdx: [] });
@@ -76,12 +84,41 @@ function parseDocxText(text: string): Parsed[] {
 }
 
 function ImportWord() {
-  const moduls = modulRepo.all();
+  const user = useAuthStore((s) => s.user);
+  const moduls = visibleModuls(user);
   const [modulId, setModulId] = useState(moduls[0]?.id ?? "");
-  const topiks = topikRepo.all().filter((t) => t.modulId === modulId);
+  const topiks = visibleTopiks(user).filter((t) => t.modulId === modulId);
   const [topikId, setTopikId] = useState(topiks[0]?.id ?? "");
   const [parsed, setParsed] = useState<Parsed[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  if (moduls.length === 0 || topiks.length === 0) {
+    return (
+      <div className="max-w-5xl space-y-4">
+        <div>
+          <Link to="/admin/modul" className="text-sm text-muted-foreground hover:underline">
+            ← Modul
+          </Link>
+          <h1 className="text-2xl font-semibold tracking-tight">Import Soal dari Word (.docx)</h1>
+        </div>
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <div className="rounded-md border bg-muted/30 p-4 text-sm">
+              <div className="flex items-center gap-2 font-medium">
+                <Lock className="h-4 w-4" />
+                Tidak ada topik yang dapat Anda importi.
+              </div>
+              <p className="mt-1 text-muted-foreground">
+                Operator dengan cakupan topik terbatas hanya dapat import soal ke topik yang
+                termasuk dalam <code>allowedTopikIds</code>. Minta admin untuk menambah akses jika
+                diperlukan.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   async function loadFile(file: File) {
     if (!topikId) {
@@ -97,6 +134,10 @@ function ImportWord() {
   }
 
   function commit() {
+    if (!topikId || !isTopikAllowed(user, topikId)) {
+      toast.error("Topik tujuan di luar cakupan Anda");
+      return;
+    }
     const valid = parsed.filter((p) => p.tipe === "essay" || p.benarIdx.length > 0);
     valid.forEach((p) => {
       const soal: Soal = {
@@ -134,7 +175,7 @@ function ImportWord() {
                 value={modulId}
                 onValueChange={(v) => {
                   setModulId(v);
-                  const ts = topikRepo.all().filter((t) => t.modulId === v);
+                  const ts = visibleTopiks(user).filter((t) => t.modulId === v);
                   setTopikId(ts[0]?.id ?? "");
                 }}
               >

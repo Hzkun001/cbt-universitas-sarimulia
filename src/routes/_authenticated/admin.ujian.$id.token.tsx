@@ -1,14 +1,16 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ujianRepo, tokenRepo, usersRepo } from "@/lib/cbt/repos";
-import { generateExamTokensServer } from "@/lib/server/repos/functions";
-import type { TokenUjian } from "@/lib/cbt/types";
+import { fetchUjianByIdServer, generateExamTokensServer } from "@/lib/server/repos/functions";
+import type { TokenUjian, Ujian } from "@/lib/cbt/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, Copy } from "lucide-react";
+import { Plus, Trash2, Copy, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthStore } from "@/lib/cbt/auth-store";
+import { ujianTouchesAllowed } from "@/lib/cbt/access";
 
 export const Route = createFileRoute("/_authenticated/admin/ujian/$id/token")({
   component: TokenPage,
@@ -16,13 +18,63 @@ export const Route = createFileRoute("/_authenticated/admin/ujian/$id/token")({
 
 function TokenPage() {
   const { id } = useParams({ from: "/_authenticated/admin/ujian/$id/token" });
-  const ujian = ujianRepo.byId(id);
-  const users = usersRepo.all();
-  const [tokens, setTokens] = useState<TokenUjian[]>(
-    tokenRepo.all().filter((t) => t.ujianId === id),
+  const user = useAuthStore((s) => s.user);
+  const initialUjian = ujianRepo.byId(id);
+
+  // (Must-fix #2) Re-order guards: do NOT call `tokenRepo.all()` /
+  // `setTokens(...)` until we have confirmed the operator is allowed to
+  // touch this ujian. Previously the token list was materialized into
+  // React state before the `ujianTouchesAllowed` check fired, which is
+  // a defence-in-depth regression in the stale-cache scenario.
+  //
+  // (Must-fix #3) Same direct-URL pattern as the exam editor: if the
+  // ujian is missing from the snapshot we ask the server to confirm
+  // existence so we can distinguish "tidak ditemukan" from "lock screen".
+  const initialAllowed = initialUjian ? ujianTouchesAllowed(user, initialUjian) : null;
+  const [ujian, setUjian] = useState<Ujian | null>(
+    initialUjian && initialAllowed ? initialUjian : null,
   );
+  const [tokens, setTokens] = useState<TokenUjian[]>([]);
+  const [users, setUsers] = useState(usersRepo.all());
+  const [loadingRemote, setLoadingRemote] = useState(initialUjian === undefined);
+  const [denied, setDenied] = useState(initialUjian !== undefined && initialAllowed === false);
   const [jumlah, setJumlah] = useState(10);
   const [generating, setGenerating] = useState(false);
+
+  useEffect(() => {
+    if (ujian === null || denied) return;
+    // Hanya muat tokens + users setelah kita yakin ujian boleh disentuh.
+    setTokens(tokenRepo.all().filter((t) => t.ujianId === id));
+    setUsers(usersRepo.all());
+  }, [id, ujian, denied]);
+
+  useEffect(() => {
+    if (initialUjian !== undefined) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await fetchUjianByIdServer({ data: { id } });
+        if (cancelled) return;
+        if (result.ok && result.ujian) {
+          if (ujianTouchesAllowed(user, result.ujian)) {
+            setUjian(result.ujian);
+          } else {
+            setDenied(true);
+          }
+        } else if (result.error === "Forbidden") {
+          setDenied(true);
+        }
+      } catch {
+        // Network/server error: fall through to "tidak ditemukan" so the
+        // operator sees a stable empty state instead of a stuck spinner.
+      } finally {
+        if (!cancelled) setLoadingRemote(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, initialUjian, user]);
 
   function refresh() {
     setTokens(tokenRepo.all().filter((t) => t.ujianId === id));
@@ -58,9 +110,38 @@ function TokenPage() {
   }
 
   function copyAll() {
-    const tersedia = tokens.filter((t) => !t.dipakaiOleh).map((t) => t.kode).join("\n");
+    const tersedia = tokens
+      .filter((t) => !t.dipakaiOleh)
+      .map((t) => t.kode)
+      .join("\n");
     navigator.clipboard.writeText(tersedia);
     toast.success("Disalin");
+  }
+
+  if (loadingRemote) {
+    return <div className="text-sm text-muted-foreground">Memuat…</div>;
+  }
+
+  if (denied) {
+    return (
+      <div className="max-w-3xl space-y-3">
+        <div>
+          <Link to="/admin/ujian" className="text-sm text-muted-foreground hover:underline">
+            ← Paket ujian
+          </Link>
+        </div>
+        <div className="rounded-md border bg-muted/30 p-4 text-sm">
+          <div className="flex items-center gap-2 font-medium">
+            <Lock className="h-4 w-4" />
+            Anda tidak dapat mengelola token untuk ujian ini.
+          </div>
+          <p className="mt-1 text-muted-foreground">
+            Token ujian hanya tersedia untuk topik yang termasuk dalam cakupan{" "}
+            <code>allowedTopikIds</code> Anda. Hubungi admin jika menurut Anda ini keliru.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   if (!ujian) return <div>Tidak ditemukan</div>;
@@ -71,9 +152,7 @@ function TokenPage() {
         <Link to="/admin/ujian" className="text-sm text-muted-foreground hover:underline">
           ← Paket ujian
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Token: {ujian.nama}
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Token: {ujian.nama}</h1>
         <p className="text-sm text-muted-foreground">
           {ujian.tokenAktif
             ? "Token aktif — peserta harus input salah satu kode di bawah."
@@ -127,7 +206,9 @@ function TokenPage() {
                       {t.dipakaiOleh ? (
                         <span className="rounded bg-muted px-2 py-0.5 text-xs">Terpakai</span>
                       ) : (
-                        <span className="rounded bg-success/20 px-2 py-0.5 text-xs text-success">Tersedia</span>
+                        <span className="rounded bg-success/20 px-2 py-0.5 text-xs text-success">
+                          Tersedia
+                        </span>
                       )}
                     </td>
                     <td className="p-3">{u?.namaLengkap ?? "-"}</td>

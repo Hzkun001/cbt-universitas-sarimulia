@@ -70,12 +70,31 @@ export function visibleModuls(user: User | null | undefined) {
   return all.filter((m) => allowedModulIds.has(m.id));
 }
 
-// Ujian dianggap "visible" jika minimal satu topicSet menyentuh topik yang
-// boleh diakses operator. Admin / operator tanpa pembatasan: semua.
+// Ujian dianggap "touchable" (editable / manageable) oleh operator jika
+// **seluruh** topicSet-nya menyentuh topik yang diizinkan. Konsisten
+// dengan server-side `operatorCanTouchTopicSets` di
+// `src/lib/server/repos/functions.ts:340` (juga `every`).
+//
+// Catatan penting: untuk daftar ujian yang ditampilkan ke operator
+// (`visibleUjians` di bawah) kita tetap menggunakan `some` — itu
+// "tampilkan ujian yang menyentuh minimal satu topik diizinkan", yang
+// adalah filter visibilitas, bukan gate edit. Di sini, pada guard
+// editor/token, kita harus `every` agar:
+//   1. Server-side `mutateEntity` tidak menolak save dari klien yang
+//      tampak mengizinkan edit. Pagar server sudah `every`; pagar
+//      klien harus sama agar UX tidak menjebak operator.
+//   2. Mencegah serangan "narrowing": tanpa `every`, operator bisa
+//      membuka editor ujian mixed-scope, menghapus topic set di luar
+//      scope, lalu save (server izinkan karena topik akhir tetap
+//      `every` in-scope). Dengan `every`, editor terkunci untuk
+//      ujian mixed-scope dan struktur ujian tidak dapat dimodifikasi.
+//
+// Perilaku sebelumnya (`some`) adalah regresi defence-in-depth yang
+// ditemukan di review adversarial Issue #10.
 export function ujianTouchesAllowed(user: User | null | undefined, ujian: Ujian): boolean {
   const set = allowedTopikIdSet(user);
   if (!set) return true;
-  return ujian.topicSets.some((ts) => set.has(ts.topikId));
+  return ujian.topicSets.length > 0 && ujian.topicSets.every((ts) => set.has(ts.topikId));
 }
 
 export function visibleUjians(user: User | null | undefined) {

@@ -61,7 +61,16 @@ type SnapshotRows = {
 };
 
 const roleSchema = z.enum(["admin", "operator", "peserta"]);
-const entitySchema = z.enum(["users", "groups", "modul", "topik", "soal", "ujian", "token", "sesi"]);
+const entitySchema = z.enum([
+  "users",
+  "groups",
+  "modul",
+  "topik",
+  "soal",
+  "ujian",
+  "token",
+  "sesi",
+]);
 const upsertUserSchema = z.object({
   id: z.string().min(1),
   username: z.string().min(3),
@@ -231,21 +240,31 @@ function adminSnapshot(rows: SnapshotRows): Snapshot {
 
 function operatorSnapshot(rows: SnapshotRows, caller: UserRow): Snapshot {
   const unrestricted = (caller.allowedTopikIds?.length ?? 0) === 0;
-  const allowedTopikIds = unrestricted ? null : new Set(parseJson<string[]>(caller.allowedTopikIds, []));
-  const topik = allowedTopikIds ? rows.topik.filter((item) => allowedTopikIds.has(item.id)) : rows.topik;
+  const allowedTopikIds = unrestricted
+    ? null
+    : new Set(parseJson<string[]>(caller.allowedTopikIds, []));
+  const topik = allowedTopikIds
+    ? rows.topik.filter((item) => allowedTopikIds.has(item.id))
+    : rows.topik;
   const topikIds = new Set(topik.map((item) => item.id));
   const modulIds = new Set(topik.map((item) => item.modulId));
   const modul = unrestricted ? rows.modul : rows.modul.filter((item) => modulIds.has(item.id));
   const soal = unrestricted ? rows.soal : rows.soal.filter((item) => topikIds.has(item.topikId));
   const ujian = unrestricted
     ? rows.ujian
-    : rows.ujian.filter((item) => parseJson<{ topikId: string }[]>(item.topicSets, []).some((set) => topikIds.has(set.topikId)));
+    : rows.ujian.filter((item) =>
+        parseJson<{ topikId: string }[]>(item.topicSets, []).some((set) =>
+          topikIds.has(set.topikId),
+        ),
+      );
   const ujianIds = new Set(ujian.map((item) => item.id));
   const sesi = rows.sesi.filter((item) => ujianIds.has(item.ujianId));
   const token = rows.token.filter((item) => ujianIds.has(item.ujianId));
   const visibleGroupIds = new Set(ujian.flatMap((item) => parseJson<string[]>(item.groupIds, [])));
   const visiblePesertaIds = new Set(sesi.map((item) => item.pesertaId));
-  const includeAllPeserta = ujian.some((item) => parseJson<string[]>(item.groupIds, []).length === 0);
+  const includeAllPeserta = ujian.some(
+    (item) => parseJson<string[]>(item.groupIds, []).length === 0,
+  );
   const users = rows.users.filter((item) => {
     if (item.id === caller.id) return true;
     if (item.role !== "peserta") return false;
@@ -273,7 +292,9 @@ function pesertaSnapshot(rows: SnapshotRows, caller: UserRow): Snapshot {
     return groupIds.length === 0 || (!!caller.groupId && groupIds.includes(caller.groupId));
   });
   const ujianIds = new Set(ujian.map((item) => item.id));
-  const sesi = rows.sesi.filter((item) => item.pesertaId === caller.id && ujianIds.has(item.ujianId));
+  const sesi = rows.sesi.filter(
+    (item) => item.pesertaId === caller.id && ujianIds.has(item.ujianId),
+  );
   const soalIds = new Set(sesi.flatMap((item) => parseJson<string[]>(item.soalIds, [])));
   const soal = rows.soal.filter((item) => soalIds.has(item.id));
   const token = rows.token.filter((item) => ujianIds.has(item.ujianId));
@@ -353,7 +374,10 @@ async function operatorCanTouchSoal(caller: UserRow, soalId: string): Promise<bo
 }
 
 async function operatorCanTouchUjian(caller: UserRow, ujianId: string): Promise<boolean> {
-  const ujian = await prisma.ujian.findUnique({ where: { id: ujianId }, select: { topicSets: true } });
+  const ujian = await prisma.ujian.findUnique({
+    where: { id: ujianId },
+    select: { topicSets: true },
+  });
   if (!ujian) return false;
   const topicSets = parseJson<Ujian["topicSets"]>(ujian.topicSets, []);
   return operatorCanTouchTopicSets(caller, topicSets);
@@ -361,7 +385,10 @@ async function operatorCanTouchUjian(caller: UserRow, ujianId: string): Promise<
 
 async function pesertaCanTouchUjian(caller: UserRow, ujianId: string): Promise<boolean> {
   if (caller.role !== "peserta") return false;
-  const ujian = await prisma.ujian.findUnique({ where: { id: ujianId }, select: { groupIds: true } });
+  const ujian = await prisma.ujian.findUnique({
+    where: { id: ujianId },
+    select: { groupIds: true },
+  });
   if (!ujian) return false;
   const groupIds = parseJson<string[]>(ujian.groupIds, []);
   return groupIds.length === 0 || (!!caller.groupId && groupIds.includes(caller.groupId));
@@ -378,7 +405,12 @@ async function requireAdminResult(): Promise<MutationAuthResult> {
   return { ok: true };
 }
 
-async function authorizeMutation(caller: UserRow | null, entity: z.infer<typeof entitySchema>, action: MutationAction, payload: unknown): Promise<MutationAuthResult> {
+async function authorizeMutation(
+  caller: UserRow | null,
+  entity: z.infer<typeof entitySchema>,
+  action: MutationAction,
+  payload: unknown,
+): Promise<MutationAuthResult> {
   if (!caller) return { ok: false, error: "Forbidden" };
   if (caller.role === "admin") return { ok: true };
 
@@ -390,50 +422,81 @@ async function authorizeMutation(caller: UserRow | null, entity: z.infer<typeof 
       if (!(await operatorHasNav(caller, "modul"))) return { ok: false, error: "Forbidden" };
       if (action === "remove") {
         const id = String((payload as { id?: string }).id ?? "");
-        return (await operatorCanTouchModul(caller, id)) ? { ok: true } : { ok: false, error: "Forbidden" };
+        return (await operatorCanTouchModul(caller, id))
+          ? { ok: true }
+          : { ok: false, error: "Forbidden" };
       }
-      return allowedTopikIdsForCaller(caller) === null ? { ok: true } : { ok: false, error: "Forbidden" };
+      return allowedTopikIdsForCaller(caller) === null
+        ? { ok: true }
+        : { ok: false, error: "Forbidden" };
     }
 
     if (entity === "topik") {
       if (!(await operatorHasNav(caller, "modul"))) return { ok: false, error: "Forbidden" };
-      return allowedTopikIdsForCaller(caller) === null ? { ok: true } : { ok: false, error: "Forbidden" };
+      return allowedTopikIdsForCaller(caller) === null
+        ? { ok: true }
+        : { ok: false, error: "Forbidden" };
     }
 
     if (entity === "soal") {
       if (!(await operatorHasNav(caller, "modul"))) return { ok: false, error: "Forbidden" };
       if (action === "remove") {
         const id = String((payload as { id?: string }).id ?? "");
-        return (await operatorCanTouchSoal(caller, id)) ? { ok: true } : { ok: false, error: "Forbidden" };
+        return (await operatorCanTouchSoal(caller, id))
+          ? { ok: true }
+          : { ok: false, error: "Forbidden" };
       }
       const item = payload as Soal;
-      return operatorCanTouchTopikId(caller, item.topikId) ? { ok: true } : { ok: false, error: "Forbidden" };
+      return operatorCanTouchTopikId(caller, item.topikId)
+        ? { ok: true }
+        : { ok: false, error: "Forbidden" };
     }
 
     if (entity === "ujian") {
       if (!(await operatorHasNav(caller, "ujian"))) return { ok: false, error: "Forbidden" };
       if (action === "remove") {
         const id = String((payload as { id?: string }).id ?? "");
-        return (await operatorCanTouchUjian(caller, id)) ? { ok: true } : { ok: false, error: "Forbidden" };
+        return (await operatorCanTouchUjian(caller, id))
+          ? { ok: true }
+          : { ok: false, error: "Forbidden" };
       }
       const item = payload as Ujian;
-      return operatorCanTouchTopicSets(caller, item.topicSets) ? { ok: true } : { ok: false, error: "Forbidden" };
+      return operatorCanTouchTopicSets(caller, item.topicSets)
+        ? { ok: true }
+        : { ok: false, error: "Forbidden" };
     }
 
     if (entity === "token") {
       if (!(await operatorHasNav(caller, "ujian"))) return { ok: false, error: "Forbidden" };
       const id = action === "remove" ? undefined : (payload as TokenUjian).ujianId;
-      if (id) return (await operatorCanTouchUjian(caller, id)) ? { ok: true } : { ok: false, error: "Forbidden" };
-      const existing = await prisma.tokenUjian.findUnique({ where: { id: String((payload as { id?: string }).id ?? "") }, select: { ujianId: true } });
-      return existing && (await operatorCanTouchUjian(caller, existing.ujianId)) ? { ok: true } : { ok: false, error: "Forbidden" };
+      if (id)
+        return (await operatorCanTouchUjian(caller, id))
+          ? { ok: true }
+          : { ok: false, error: "Forbidden" };
+      const existing = await prisma.tokenUjian.findUnique({
+        where: { id: String((payload as { id?: string }).id ?? "") },
+        select: { ujianId: true },
+      });
+      return existing && (await operatorCanTouchUjian(caller, existing.ujianId))
+        ? { ok: true }
+        : { ok: false, error: "Forbidden" };
     }
 
     if (entity === "sesi") {
-      if (!(await operatorHasAnyNav(caller, OPERATOR_SESSION_KEYS))) return { ok: false, error: "Forbidden" };
-      const ujianId = action === "remove"
-        ? (await prisma.sesiUjian.findUnique({ where: { id: String((payload as { id?: string }).id ?? "") }, select: { ujianId: true } }))?.ujianId
-        : (payload as SesiUjian).ujianId;
-      return ujianId && (await operatorCanTouchUjian(caller, ujianId)) ? { ok: true } : { ok: false, error: "Forbidden" };
+      if (!(await operatorHasAnyNav(caller, OPERATOR_SESSION_KEYS)))
+        return { ok: false, error: "Forbidden" };
+      const ujianId =
+        action === "remove"
+          ? (
+              await prisma.sesiUjian.findUnique({
+                where: { id: String((payload as { id?: string }).id ?? "") },
+                select: { ujianId: true },
+              })
+            )?.ujianId
+          : (payload as SesiUjian).ujianId;
+      return ujianId && (await operatorCanTouchUjian(caller, ujianId))
+        ? { ok: true }
+        : { ok: false, error: "Forbidden" };
     }
 
     return { ok: false, error: "Forbidden" };
@@ -443,19 +506,26 @@ async function authorizeMutation(caller: UserRow | null, entity: z.infer<typeof 
     if (entity === "token" && action === "upsert") {
       const item = payload as TokenUjian;
       if (item.dipakaiOleh !== caller.id) return { ok: false, error: "Forbidden" };
-      if (!(await pesertaCanTouchUjian(caller, item.ujianId))) return { ok: false, error: "Forbidden" };
+      if (!(await pesertaCanTouchUjian(caller, item.ujianId)))
+        return { ok: false, error: "Forbidden" };
       const existing = await prisma.tokenUjian.findUnique({ where: { id: item.id } });
       if (!existing) return { ok: false, error: "Forbidden" };
-      if (existing.ujianId !== item.ujianId || existing.kode !== item.kode) return { ok: false, error: "Forbidden" };
-      if (existing.dipakaiOleh && existing.dipakaiOleh !== caller.id) return { ok: false, error: "Forbidden" };
+      if (existing.ujianId !== item.ujianId || existing.kode !== item.kode)
+        return { ok: false, error: "Forbidden" };
+      if (existing.dipakaiOleh && existing.dipakaiOleh !== caller.id)
+        return { ok: false, error: "Forbidden" };
       return { ok: true };
     }
 
     if (entity === "sesi" && action === "upsert") {
       const item = payload as SesiUjian;
       if (item.pesertaId !== caller.id) return { ok: false, error: "Forbidden" };
-      if (!(await pesertaCanTouchUjian(caller, item.ujianId))) return { ok: false, error: "Forbidden" };
-      const existing = await prisma.sesiUjian.findUnique({ where: { id: item.id }, select: { pesertaId: true, ujianId: true } });
+      if (!(await pesertaCanTouchUjian(caller, item.ujianId)))
+        return { ok: false, error: "Forbidden" };
+      const existing = await prisma.sesiUjian.findUnique({
+        where: { id: item.id },
+        select: { pesertaId: true, ujianId: true },
+      });
       if (existing && (existing.pesertaId !== caller.id || existing.ujianId !== item.ujianId)) {
         return { ok: false, error: "Forbidden" };
       }
@@ -603,10 +673,7 @@ export const generateExamTokensServer = createServerFn({ method: "POST" })
         created.push(mapToken(row));
       } catch (err) {
         // Unique constraint on (ujianId, kode) — retry with a fresh code.
-        if (
-          err instanceof Prisma.PrismaClientKnownRequestError &&
-          err.code === "P2002"
-        ) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
           continue;
         }
         throw err;
@@ -630,6 +697,57 @@ export const getCbtSnapshot = createServerFn({ method: "GET" }).handler(async ()
   if (!caller) throw new Error("Unauthorized");
   return buildSnapshotForUser(caller);
 });
+
+// ---------------------------------------------------------------------------
+// Direct-URL fetch for the exam editor and token page (Issue #10 must-fix #3).
+//
+// The client cache (`ujianRepo`) is filtered by `operatorSnapshot` so that a
+// restricted operator never sees exams whose `topicSets` are entirely
+// outside `allowedTopikIds`. When the operator navigates to a direct URL
+// for such an exam, `ujianRepo.byId` returns `undefined` and the route used
+// to fall through to a generic "tidak ditemukan" branch — leaving the
+// operator unable to tell whether the exam was deleted or just out of
+// scope.
+//
+// This function fetches the ujian **unfiltered by scope** (i.e. the same
+// row any admin would see) and applies a coarser visibility predicate:
+//   - admin: full access.
+//   - operator: must own at least one of the ujian's topic sets
+//     (`some` semantics — the operator can see the lock screen, but
+//     `ujianTouchesAllowed` uses `every` and will still block edits).
+//   - peserta: must be in a group that the ujian is open to.
+//
+// This avoids leaking exam metadata to users who should never see the
+// exam at all, while still letting the legitimate "exists but blocked"
+// flow render the lock screen with a clear message.
+// ---------------------------------------------------------------------------
+export const fetchUjianByIdServer = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await seedIfNeeded();
+    const caller = await requireCaller();
+    if (!caller) return { ok: false as const, error: "Unauthorized" };
+
+    const row = await prisma.ujian.findUnique({ where: { id: data.id } });
+    if (!row) return { ok: false as const, error: "Not found" };
+
+    if (caller.role === "operator") {
+      const allowed = allowedTopikIdsForCaller(caller);
+      if (allowed) {
+        const sets = parseJson<{ topikId: string }[]>(row.topicSets, []);
+        const topicIds = new Set(sets.map((s) => s.topikId));
+        const any = [...topicIds].some((id) => allowed.has(id));
+        if (!any) return { ok: false as const, error: "Forbidden" };
+      }
+    } else if (caller.role === "peserta") {
+      const groupIds = parseJson<string[]>(row.groupIds, []);
+      if (groupIds.length > 0 && (!caller.groupId || !groupIds.includes(caller.groupId))) {
+        return { ok: false as const, error: "Forbidden" };
+      }
+    }
+
+    return { ok: true as const, ujian: mapUjian(row) };
+  });
 
 export const getPublicBootConfigServer = createServerFn({ method: "GET" }).handler(async () => {
   await seedIfNeeded();
@@ -701,7 +819,7 @@ export const upsertUserServer = createServerFn({ method: "POST" })
 
       const passwordHash = data.newPassword
         ? await hashPassword(data.newPassword)
-        : existing?.passwordHash ?? "";
+        : (existing?.passwordHash ?? "");
 
       const saved = await prisma.user.upsert({
         where: { id: data.id },
@@ -1156,9 +1274,7 @@ export const importBackupServer = createServerFn({ method: "POST" })
             })
           ).map((row) => `${row.ujianId}::${row.kode}`),
         );
-        const toInsert = incoming.filter(
-          (t) => !existingKeys.has(`${t.ujianId}::${t.kode}`),
-        );
+        const toInsert = incoming.filter((t) => !existingKeys.has(`${t.ujianId}::${t.kode}`));
         if (toInsert.length) {
           await tx.tokenUjian.createMany({
             data: toInsert.map((item) => ({
