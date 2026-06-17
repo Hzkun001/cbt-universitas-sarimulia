@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuthStore } from "@/lib/cbt/auth-store";
 import { ujianRepo, sesiRepo } from "@/lib/cbt/repos";
+import { isParticipantAssignedToExam } from "@/lib/cbt/access";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, FileText, CalendarClock, CalendarX } from "lucide-react";
@@ -12,16 +13,18 @@ export const Route = createFileRoute("/_authenticated/peserta/")({
 
 function PesertaDashboard() {
   const user = useAuthStore((s) => s.user)!;
-  const ujian = ujianRepo
-    .all()
-    .filter((u) => !u.groupIds.length || (user.groupId && u.groupIds.includes(user.groupId)));
+  // Group-assignment filter uses the shared policy helper so the
+  // dashboard and the pre-exam route can't drift apart (Issue #8).
+  const ujian = ujianRepo.all().filter((u) => isParticipantAssignedToExam(user, u));
   const sesi = sesiRepo.all().filter((s) => s.pesertaId === user.id);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Halo, {user.namaLengkap}</h1>
-        <p className="text-sm text-muted-foreground">Berikut daftar ujian yang tersedia untuk Anda.</p>
+        <p className="text-sm text-muted-foreground">
+          Berikut daftar ujian yang tersedia untuk Anda.
+        </p>
       </div>
 
       {ujian.length === 0 ? (

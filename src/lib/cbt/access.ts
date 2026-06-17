@@ -7,6 +7,26 @@
 import type { User, Ujian } from "./types";
 import { topikRepo, soalRepo, modulRepo, ujianRepo } from "./repos";
 
+/**
+ * Thrown by `buildSesi` / `findOrCreateSesi` when a participant tries to
+ * start or resume a session for an exam that is not assigned to their
+ * group. The pre-exam route also guards against this in the UI, but the
+ * session builder re-checks (defense in depth) so that direct server
+ * calls and stale client state cannot bypass the policy.
+ */
+export class PesertaNotAssignedToExamError extends Error {
+  readonly code = "PESERTA_NOT_ASSIGNED_TO_EXAM";
+  readonly ujianId: string;
+  readonly pesertaId: string;
+
+  constructor(message: string, context: { ujianId: string; pesertaId: string }) {
+    super(message);
+    this.name = "PesertaNotAssignedToExamError";
+    this.ujianId = context.ujianId;
+    this.pesertaId = context.pesertaId;
+  }
+}
+
 export function isUnrestricted(user: User | null | undefined): boolean {
   if (!user) return false;
   if (user.role === "admin") return true;
@@ -42,7 +62,10 @@ export function visibleModuls(user: User | null | undefined) {
   const all = modulRepo.all();
   if (!set) return all;
   const allowedModulIds = new Set(
-    topikRepo.all().filter((t) => set.has(t.id)).map((t) => t.modulId),
+    topikRepo
+      .all()
+      .filter((t) => set.has(t.id))
+      .map((t) => t.modulId),
   );
   return all.filter((m) => allowedModulIds.has(m.id));
 }
@@ -60,4 +83,40 @@ export function visibleUjians(user: User | null | undefined) {
   const all = ujianRepo.all();
   if (!set) return all;
   return all.filter((u) => u.topicSets.some((ts) => set.has(ts.topikId)));
+}
+
+// ---------------- Peserta exam-group assignment ----------------
+//
+// Exam assignment is enforced at three layers, all backed by the same
+// predicate below:
+//   1. Dashboard list filters out exams outside the participant's group
+//      (`src/routes/_authenticated/peserta.index.tsx`).
+//   2. Pre-exam direct URL is blocked before token redemption / session
+//      creation (`src/routes/_authenticated/peserta.ujian.$id.tsx`).
+//   3. The session builder itself re-checks before producing a sesi, so
+//      server-side `mutateEntity` calls and stale client state cannot
+//      bypass the policy (`src/lib/cbt/exam.ts`).
+//
+// An empty `ujian.groupIds` is treated as "open to all participants"
+// (existing convention: dashboards/tests rely on it). Otherwise the
+// participant's `user.groupId` must be a member of `ujian.groupIds`.
+export function isParticipantAssignedToExam(
+  user: User | null | undefined,
+  ujian: Pick<Ujian, "groupIds">,
+): boolean {
+  if (!user) return false;
+  const groupIds = ujian.groupIds ?? [];
+  if (groupIds.length === 0) return true;
+  if (!user.groupId) return false;
+  return groupIds.includes(user.groupId);
+}
+
+/**
+ * Combined predicate for the peserta pre-exam entrypoint. Today it is
+ * just the assignment check, but having a single named entrypoint means
+ * future availability/feature flags (e.g. token-aktif gating) can be
+ * added without changing the route signature.
+ */
+export function participantCanAccessUjian(user: User | null | undefined, ujian: Ujian): boolean {
+  return isParticipantAssignedToExam(user, ujian);
 }

@@ -1,7 +1,8 @@
 // Scoring + sesi helpers
 import { soalRepo, sesiRepo, ujianRepo } from "./repos";
-import type { SesiUjian, Soal, Ujian } from "./types";
+import type { SesiUjian, Soal, Ujian, User } from "./types";
 import { uid } from "./storage";
+import { PesertaNotAssignedToExamError, isParticipantAssignedToExam } from "./access";
 
 function shuffle<T>(arr: T[]): T[] {
   const a = arr.slice();
@@ -12,7 +13,17 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export function buildSesi(ujian: Ujian, pesertaId: string): SesiUjian {
+export function buildSesi(ujian: Ujian, pesertaId: string, user?: User | null): SesiUjian {
+  // Defense-in-depth: the pre-exam route already checks group assignment
+  // before reaching this point, but `buildSesi` is also reachable through
+  // `mutateEntity` / stale client state. Re-assert here so the policy is
+  // enforced at the session-builder boundary, not just the UI.
+  if (user && !isParticipantAssignedToExam(user, ujian)) {
+    throw new PesertaNotAssignedToExamError("Peserta tidak terdaftar pada ujian ini.", {
+      ujianId: ujian.id,
+      pesertaId,
+    });
+  }
   const all = soalRepo.all();
   const soalTerpilih: Soal[] = [];
   for (const ts of ujian.topicSets) {
@@ -27,7 +38,9 @@ export function buildSesi(ujian: Ujian, pesertaId: string): SesiUjian {
   }
 
   if (soalTerpilih.length === 0) {
-    throw new Error(`Bank soal untuk ujian \"${ujian.nama}\" belum cukup atau tidak cocok dengan filter topik.`);
+    throw new Error(
+      `Bank soal untuk ujian \"${ujian.nama}\" belum cukup atau tidak cocok dengan filter topik.`,
+    );
   }
 
   const jawabanOrder: Record<string, string[]> = {};
@@ -84,10 +97,7 @@ export function gradeSesi(sesi: SesiUjian, ujian: Ujian): SesiUjian {
     const selected = j.jawabanIds;
     let skor = 0;
     if (selected.length === 0) skor = ujian.poinKosong;
-    else if (
-      benarIds.length === selected.length &&
-      benarIds.every((id) => selected.includes(id))
-    )
+    else if (benarIds.length === selected.length && benarIds.every((id) => selected.includes(id)))
       skor = ujian.poinBenar;
     else skor = ujian.poinSalah;
     total += skor;
@@ -117,7 +127,11 @@ export function recomputeSkor(sesi: SesiUjian, ujian: Ujian): SesiUjian {
   return { ...sesi, skorTotal: total, maxSkor };
 }
 
-export function findOrCreateSesi(ujianId: string, pesertaId: string): SesiUjian {
+export function findOrCreateSesi(
+  ujianId: string,
+  pesertaId: string,
+  user?: User | null,
+): SesiUjian {
   const all = sesiRepo.all();
   const existing = all.find(
     (s) => s.ujianId === ujianId && s.pesertaId === pesertaId && s.status !== "selesai",
@@ -127,7 +141,17 @@ export function findOrCreateSesi(ujianId: string, pesertaId: string): SesiUjian 
   if (!ujian) {
     throw new Error("Ujian tidak ditemukan.");
   }
-  const fresh = buildSesi(ujian, pesertaId);
+  // Enforce group assignment before any sesi is created. We check here
+  // (and not just inside `buildSesi`) so the same predicate covers the
+  // "ujian exists" branch too — there is no point producing a sesi for
+  // an unassigned participant.
+  if (user && !isParticipantAssignedToExam(user, ujian)) {
+    throw new PesertaNotAssignedToExamError("Peserta tidak terdaftar pada ujian ini.", {
+      ujianId: ujian.id,
+      pesertaId,
+    });
+  }
+  const fresh = buildSesi(ujian, pesertaId, user);
   sesiRepo.upsert(fresh);
   return fresh;
 }
