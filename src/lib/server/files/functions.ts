@@ -107,7 +107,10 @@ async function requireCaller() {
 }
 
 async function operatorHasFilesAccess() {
-  const config = await prisma.appConfig.findUnique({ where: { id: "app" }, select: { roleAccess: true } });
+  const config = await prisma.appConfig.findUnique({
+    where: { id: "app" },
+    select: { roleAccess: true },
+  });
   const operatorAccess = parseJson<Record<string, string[]>>(config?.roleAccess, {
     operator: [...DEFAULT_OPERATOR_ROLE_ACCESS],
   }).operator;
@@ -118,7 +121,8 @@ async function requireFileManagerAccess() {
   const caller = await requireCaller();
   if (!caller) return { ok: false as const, error: "Forbidden" };
   if (caller.role === "admin") return { ok: true as const, caller };
-  if (caller.role === "operator" && (await operatorHasFilesAccess())) return { ok: true as const, caller };
+  if (caller.role === "operator" && (await operatorHasFilesAccess()))
+    return { ok: true as const, caller };
   return { ok: false as const, error: "Forbidden" };
 }
 
@@ -126,6 +130,75 @@ async function requireAdmin() {
   const caller = await requireCaller();
   if (!caller || caller.role !== "admin") return { ok: false as const, error: "Forbidden" };
   return { ok: true as const, caller };
+}
+
+// Extract file manager ids referenced as `file://<id>` inside rich-text HTML.
+// Mirrors the client `extractFileIds` pattern in src/lib/cbt/files.ts.
+function extractFileIds(html: string): string[] {
+  const ids: string[] = [];
+  const re = /file:\/\/([a-z0-9_]+)/gi;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(html))) ids.push(match[1]);
+  return ids;
+}
+
+// Issue #2: a peserta may read a file blob ONLY if that file could legitimately
+// appear in content the snapshot already exposes to them — i.e. the `deskripsi`
+// of an exam assigned to their group, or the `detail`/`pembahasan`/`audioFileId`
+// of a soal that is part of one of THEIR sesi for such an exam. This mirrors
+// `pesertaSnapshot` (repos/functions.ts) so authorization and visibility stay
+// consistent, and prevents a peserta from fetching arbitrary file ids.
+async function pesertaCanAccessFile(
+  caller: { id: string; role: string; groupId: string | null },
+  fileId: string,
+): Promise<boolean> {
+  // Group-assigned exams: groupIds empty (open to all) OR includes the group.
+  const ujianRows = await prisma.ujian.findMany({
+    select: { id: true, groupIds: true, deskripsi: true },
+  });
+  const assigned = ujianRows.filter((u) => {
+    const groupIds = parseJson<string[]>(u.groupIds, []);
+    return groupIds.length === 0 || (!!caller.groupId && groupIds.includes(caller.groupId));
+  });
+  const allowed = new Set<string>();
+  for (const u of assigned) {
+    for (const id of extractFileIds(u.deskripsi)) allowed.add(id);
+  }
+  if (allowed.has(fileId)) return true;
+
+  // Soal referenced by the peserta's own sesi for those assigned exams.
+  const assignedIds = new Set(assigned.map((u) => u.id));
+  const sesiRows = await prisma.sesiUjian.findMany({
+    where: { pesertaId: caller.id },
+    select: { ujianId: true, soalIds: true },
+  });
+  const soalIds = new Set<string>();
+  for (const s of sesiRows) {
+    if (!assignedIds.has(s.ujianId)) continue;
+    for (const sid of parseJson<string[]>(s.soalIds, [])) soalIds.add(sid);
+  }
+  if (soalIds.size === 0) return false;
+
+  const soalRows = await prisma.soal.findMany({
+    where: { id: { in: [...soalIds] } },
+    select: {
+      detail: true,
+      pembahasan: true,
+      audioFileId: true,
+      jawaban: { select: { detail: true } },
+    },
+  });
+  for (const soal of soalRows) {
+    if (soal.audioFileId && soal.audioFileId === fileId) return true;
+    for (const id of extractFileIds(soal.detail)) allowed.add(id);
+    for (const id of extractFileIds(soal.pembahasan)) allowed.add(id);
+    // Answer-option detail is rich text rendered to peserta via RichView
+    // (kerjakan/hasil pages), so its embedded file:// images must be allowed.
+    for (const j of soal.jawaban) {
+      for (const id of extractFileIds(j.detail)) allowed.add(id);
+    }
+  }
+  return allowed.has(fileId);
 }
 
 export const listStoredFiles = createServerFn({ method: "GET" }).handler(async () => {
@@ -185,6 +258,20 @@ export const getStoredFileUrl = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const caller = await requireCaller();
     if (!caller) throw new Error("Forbidden");
+
+    // Authorize by role (Issue #2). Admin and operators may read any blob:
+    // operators legitimately view exam/soal images (hasil/evaluasi/laporan)
+    // based on their topik scope, independent of the file-manager nav, so
+    // gating reads behind the "files" management nav would break those images.
+    // A peserta is scoped to files referenced by exams/soal they can access;
+    // everyone else is denied.
+    if (caller.role === "admin" || caller.role === "operator") {
+      // allowed
+    } else if (caller.role === "peserta") {
+      if (!(await pesertaCanAccessFile(caller, data.id))) throw new Error("Forbidden");
+    } else {
+      throw new Error("Forbidden");
+    }
 
     const meta = await readMeta(data.id);
     if (!meta) return null;
