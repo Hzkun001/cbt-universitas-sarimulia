@@ -43,6 +43,12 @@ Thumbs.db
 # claude code local tooling/skills
 .claude/
 
+# local agent/bmad tooling (not for cloud)
+.agents/
+_bmad/
+_bmad-output/
+.pi-subagents/
+
 # playwright test outputs / generated evidence (regenerable)
 artifacts/
 tests/output/
