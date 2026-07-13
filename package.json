@@ -14,9 +14,6 @@
     "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:list": "playwright test --list",
     "test:unit": "node --test tests/unit/*.test.mjs"
   },
   "dependencies": {
@@ -83,7 +80,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
-    "@playwright/test": "^1.54.2",
     "@types/katex": "^0.16.8",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
