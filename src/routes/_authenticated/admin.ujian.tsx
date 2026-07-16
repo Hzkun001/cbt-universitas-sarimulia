@@ -5,7 +5,7 @@ import {
 	useRouterState,
 } from "@tanstack/react-router";
 import { useState } from "react";
-import { ujianRepo, sesiRepo } from "@/lib/cbt/repos";
+import { ujianRepo, sesiRepo, mataKuliahRepo, semesterRepo } from "@/lib/cbt/repos";
 import { useAuthStore } from "@/lib/cbt/auth-store";
 import { uid } from "@/lib/cbt/storage";
 import type { Ujian } from "@/lib/cbt/types";
@@ -110,6 +110,10 @@ function UjianList() {
 									<div>
 										<h3 className="font-medium">{u.nama}</h3>
 										<p className="text-xs text-muted-foreground">
+											{u.mataKuliahId ? `MK: ${mataKuliahRepo.byId(u.mataKuliahId)?.nama ?? "-"} ` : ""}
+											{u.semesterId ? `| SMT: ${semesterRepo.byId(u.semesterId)?.nama ?? "-"} ` : ""}
+										</p>
+										<p className="text-xs text-muted-foreground mt-1">
 											{u.durasiMenit} menit · {soalCount} soal ·{" "}
 											{u.groupIds.length} group · {sesiCount} sesi
 										</p>

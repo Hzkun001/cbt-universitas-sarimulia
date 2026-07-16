@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { sesiRepo, ujianRepo, soalRepo } from "@/lib/cbt/repos";
+import { sesiRepo, ujianRepo, soalRepo, mataKuliahRepo, semesterRepo } from "@/lib/cbt/repos";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download } from "lucide-react";
+import { Download, BookOpen, Target, PercentSquare, AlertCircle } from "lucide-react";
 import { analisisButir, labelKesukaran, labelDiskriminasi } from "@/lib/cbt/analisis";
 import { exportSheet, stripHtml } from "@/lib/cbt/excel";
 import { RichView } from "@/components/cbt/RichEditor";
@@ -30,7 +30,16 @@ function AnalisisPage() {
   const stats = analisisButir(sesis, soals);
 
   function exportExcel() {
+    const selectedUjian = ujians.find((u) => u.id === ujianId);
+    const mk = selectedUjian?.mataKuliahId ? mataKuliahRepo.byId(selectedUjian.mataKuliahId) : null;
+    const smt = selectedUjian?.semesterId ? semesterRepo.byId(selectedUjian.semesterId) : null;
+
     const aoa: (string | number)[][] = [
+      ["Laporan Analisis Butir Soal"],
+      ["Ujian", selectedUjian?.nama ?? "-"],
+      ["Mata Kuliah", mk?.nama ?? "-"],
+      ["Semester", smt?.nama ?? "-"],
+      [],
       [
         "No",
         "Soal",
@@ -61,14 +70,14 @@ function AnalisisPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 pb-12">
       <div>
-        <Link to="/admin/laporan" className="text-sm text-muted-foreground hover:underline">
-          ← Laporan
+        <Link to="/admin/laporan" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 w-fit mb-3">
+          ← Kembali ke Dasbor Laporan
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Analisis Butir Soal</h1>
-        <p className="text-sm text-muted-foreground">
-          Tingkat kesukaran, indeks diskriminasi (upper-lower 27%), dan daya pengecoh per opsi.
+        <h1 className="text-2xl font-bold tracking-tight">Analisis Butir Soal</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Analisis komprehensif tingkat kesukaran, indeks diskriminasi (metode upper-lower 27%), dan efektivitas daya pengecoh opsi.
         </p>
       </div>
 
@@ -81,11 +90,14 @@ function AnalisisPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ujians.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.nama}
-                  </SelectItem>
-                ))}
+                {ujians.map((u) => {
+                  const mk = u.mataKuliahId ? mataKuliahRepo.byId(u.mataKuliahId) : null;
+                  return (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.nama} {mk ? `(${mk.nama})` : ""}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -99,46 +111,70 @@ function AnalisisPage() {
         </CardContent>
       </Card>
 
-      <div className="space-y-2">
+      <div className="space-y-4">
         {stats.map((s, i) => {
           const soal = soals.find((x) => x.id === s.soalId);
           return (
-            <Card key={s.soalId}>
-              <CardContent className="space-y-2 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <div className="text-muted-foreground">
-                    #{i + 1} · {soal?.tipe}
+            <Card key={s.soalId} className="shadow-sm border ring-1 ring-border/30 overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b bg-muted/20 p-4">
+                <div className="flex items-center gap-2">
+                  <span className="bg-primary/10 text-primary font-bold px-2.5 py-1 rounded-md text-sm border border-primary/20">#{i + 1}</span>
+                  <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground bg-muted px-2 py-1 rounded">{soal?.tipe}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-xs">
+                  <div className="flex items-center gap-1.5 bg-background border px-2.5 py-1.5 rounded-lg shadow-sm">
+                    <Target className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-medium">TK:</span>
+                    <strong className="text-foreground">{Math.round(s.tingkatKesukaran * 1000) / 10}%</strong>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
+                      s.tingkatKesukaran > 0.7 ? 'bg-success/15 text-success' :
+                      s.tingkatKesukaran < 0.3 ? 'bg-destructive/15 text-destructive' :
+                      'bg-warning/15 text-warning-foreground'
+                    }`}>
+                      {labelKesukaran(s.tingkatKesukaran)}
+                    </span>
                   </div>
-                  <div className="flex flex-wrap gap-3">
-                    <span>
-                      TK:{" "}
-                      <strong>{Math.round(s.tingkatKesukaran * 1000) / 10}%</strong>{" "}
-                      <span className="rounded bg-muted px-1.5 py-0.5">
-                        {labelKesukaran(s.tingkatKesukaran)}
-                      </span>
+                  <div className="flex items-center gap-1.5 bg-background border px-2.5 py-1.5 rounded-lg shadow-sm">
+                    <PercentSquare className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-medium">DK:</span>
+                    <strong className="text-foreground">{Math.round(s.indeksDiskriminasi * 100) / 100}</strong>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
+                      s.indeksDiskriminasi >= 0.4 ? 'bg-success/15 text-success' :
+                      s.indeksDiskriminasi <= 0.19 ? 'bg-destructive/15 text-destructive' :
+                      'bg-warning/15 text-warning-foreground'
+                    }`}>
+                      {labelDiskriminasi(s.indeksDiskriminasi)}
                     </span>
-                    <span>
-                      DK: <strong>{Math.round(s.indeksDiskriminasi * 100) / 100}</strong>{" "}
-                      <span className="rounded bg-muted px-1.5 py-0.5">
-                        {labelDiskriminasi(s.indeksDiskriminasi)}
-                      </span>
-                    </span>
-                    <span>
-                      {s.jumlahBenar} / {s.jumlahMengerjakan} benar
-                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-background border px-2.5 py-1.5 rounded-lg shadow-sm">
+                    <AlertCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                    <strong>{s.jumlahBenar}</strong> <span className="text-muted-foreground">/ {s.jumlahMengerjakan} benar</span>
                   </div>
                 </div>
-                {soal && <RichView html={soal.detail} />}
+              </div>
+              <CardContent className="p-4 space-y-4">
+                {soal && (
+                  <div className="prose prose-sm max-w-none text-foreground">
+                    <RichView html={soal.detail} />
+                  </div>
+                )}
+                
                 {soal && soal.tipe !== "essay" && (
-                  <div className="grid grid-cols-2 gap-1 text-xs sm:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 mt-2">
                     {soal.jawaban.map((o, idx) => (
                       <div
                         key={o.id}
-                        className={`rounded border p-1.5 ${o.benar ? "bg-success/10 border-success/30" : ""}`}
+                        className={`rounded-lg border p-2 flex items-center justify-between ${
+                          o.benar ? "bg-success/5 border-success/30 shadow-sm" : "bg-muted/10"
+                        }`}
                       >
-                        <span className="font-mono">{String.fromCharCode(65 + idx)}</span>{" "}
-                        dipilih: <strong>{s.dayaPengecoh[o.id] ?? 0}</strong>
-                        {o.benar && <span className="ml-1 text-success">✓</span>}
+                        <div>
+                          <span className="font-mono bg-background border px-1.5 py-0.5 rounded shadow-sm mr-1.5">
+                            {String.fromCharCode(65 + idx)}
+                          </span>
+                          <span className="text-muted-foreground">dipilih:</span> <strong className="text-foreground">{s.dayaPengecoh[o.id] ?? 0}</strong>
+                        </div>
+                        {o.benar && <span className="text-success font-bold">Kunci</span>}
                       </div>
                     ))}
                   </div>

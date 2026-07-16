@@ -25,12 +25,14 @@ import {
   FolderOpen,
   PenLine,
   Activity,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ADMIN_ROUTE_RULES = {
   root: { key: "dashboard", adminOnly: false, paths: ["/admin"] },
   users: { key: "users", adminOnly: true, paths: ["/admin/users"] },
+  akademik: { key: "akademik", adminOnly: true, paths: ["/admin/akademik"] },
   peserta: { key: "peserta", adminOnly: false, paths: ["/admin/peserta"] },
   modul: { key: "modul", adminOnly: false, paths: ["/admin/modul", "/admin/topik"] },
   files: { key: "files", adminOnly: false, paths: ["/admin/files"] },
@@ -56,6 +58,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/users", label: "Pengguna", icon: Users },
+  { to: "/admin/akademik", label: "Akademik", icon: Landmark },
   { to: "/admin/peserta", label: "Peserta", icon: GraduationCap },
   { to: "/admin/peserta/online", label: "Peserta Online", icon: Activity },
   { to: "/admin/modul", label: "Bank Soal", icon: BookOpen },
@@ -85,21 +88,21 @@ function resolveAdminRouteRule(pathname: string): AdminRouteRule | null {
   return match?.rule ?? null;
 }
 
-function operatorAccessKeys(cfg: AppConfig) {
-  return new Set((cfg.roleAccess.operator ?? []) as NavKey[]);
+function operatorAccessKeys(cfg: AppConfig, role: Role) {
+  return new Set((cfg.roleAccess[role] ?? []) as NavKey[]);
 }
 
 export function canAccessAdminPath(user: RouteUser, pathname: string, cfg: AppConfig) {
-  if (user.role === "admin") return true;
-  if (user.role === "peserta") return false;
+  if (user.role === "super_admin") return true;
+  if (user.role === "mahasiswa") return false;
   const rule = resolveAdminRouteRule(pathname);
   if (!rule) return false;
   if (rule.adminOnly) return false;
-  return operatorAccessKeys(cfg).has(rule.key);
+  return operatorAccessKeys(cfg, user.role).has(rule.key);
 }
 
 function firstAllowedAdminPath(user: RouteUser, cfg: AppConfig) {
-  if (user.role === "admin") return "/admin";
+  if (user.role === "super_admin") return "/admin";
   const firstVisible = navItems.find((item) => canAccessAdminPath(user, item.to, cfg));
   return firstVisible?.to ?? "/login";
 }
@@ -107,7 +110,7 @@ function firstAllowedAdminPath(user: RouteUser, cfg: AppConfig) {
 export const Route = createFileRoute("/_authenticated/admin")({
   beforeLoad: async ({ context, location }) => {
     const user = (context as { user: RouteUser }).user;
-    if (user.role === "peserta") throw redirect({ to: "/peserta" });
+    if (user.role === "mahasiswa") throw redirect({ to: "/peserta" });
 
     try {
       await hydrateRepos();
@@ -138,10 +141,14 @@ function AdminLayout() {
       <div className="flex">
         <aside className="hidden w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground lg:block">
           <div className="flex h-14 items-center gap-2 border-b px-4 font-semibold">
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-              Z
-            </span>
-            {appName}
+            {cfg.appLogo ? (
+              <img src={cfg.appLogo} alt="Logo" className="h-7 w-auto object-contain" />
+            ) : (
+              <span className="grid h-7 w-7 place-items-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+                Z
+              </span>
+            )}
+            <span className="truncate">{appName}</span>
           </div>
           <nav className="space-y-1 p-3">
             {visible.map((n) => {

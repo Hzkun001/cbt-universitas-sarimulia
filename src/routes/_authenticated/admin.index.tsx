@@ -20,7 +20,7 @@ function Dashboard() {
   const user = useAuthStore((s) => s.user)!;
   const counts = {
     pengguna: usersRepo.all().length,
-    peserta: usersRepo.all().filter((u) => u.role === "peserta").length,
+    peserta: usersRepo.all().filter((u) => u.role === "mahasiswa").length,
     group: groupsRepo.all().length,
     modul: modulRepo.all().length,
     topik: topikRepo.all().length,

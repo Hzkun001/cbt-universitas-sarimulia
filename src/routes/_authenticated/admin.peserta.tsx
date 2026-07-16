@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { usersRepo, groupsRepo } from "@/lib/cbt/repos";
 import { hashPassword } from "@/lib/cbt/hash";
-import { upsertUserServer } from "@/lib/server/repos/functions";
+import { upsertUserServer } from "@/lib/server/users/functions";
 import { uid } from "@/lib/cbt/storage";
 import type { Group, User } from "@/lib/cbt/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +23,7 @@ type PesertaWithPwd = User & { _initialPassword?: string };
 
 function PesertaPage() {
   const [peserta, setPeserta] = useState<PesertaWithPwd[]>(
-    usersRepo.all().filter((u) => u.role === "peserta"),
+    usersRepo.all().filter((u) => u.role === "mahasiswa"),
   );
   const [groups, setGroups] = useState<Group[]>(groupsRepo.all());
   const [editing, setEditing] = useState<PesertaWithPwd | null>(null);
@@ -33,7 +33,7 @@ function PesertaPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   function refresh() {
-    setPeserta(usersRepo.all().filter((u) => u.role === "peserta"));
+    setPeserta(usersRepo.all().filter((u) => u.role === "mahasiswa"));
     setGroups(groupsRepo.all());
   }
 
@@ -61,8 +61,8 @@ function PesertaPage() {
         groupId = g.id;
       }
       const u: PesertaWithPwd = {
-        id: uid("u_"), username, namaLengkap: nama, role: "peserta",
-        allowedTopikIds: [], groupId, aktif: true,
+        id: uid("u_"), username, namaLengkap: nama, role: "mahasiswa",
+        allowedTopikIds: [], mataKuliahIds: [], groupId, aktif: true,
         passwordHash: await hashPassword(password), createdAt: Date.now(),
         _initialPassword: password,
       };
@@ -186,7 +186,7 @@ function PesertaDialog({
         id: editing?.id ?? uid("u_"),
         username: form.username.trim(),
         namaLengkap: form.namaLengkap.trim(),
-        role: "peserta",
+        role: "mahasiswa",
         allowedTopikIds: editing?.allowedTopikIds ?? [],
         groupId: form.groupId || undefined,
         detail: editing?.detail,

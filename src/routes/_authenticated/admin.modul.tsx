@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { z } from "zod";
-import { modulRepo, topikRepo, soalRepo } from "@/lib/cbt/repos";
+import { modulRepo, topikRepo, soalRepo, mataKuliahRepo } from "@/lib/cbt/repos";
 import { uid } from "@/lib/cbt/storage";
 import { ModulSchema, TopikSchema, SoalSchema, type Modul } from "@/lib/cbt/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2, ChevronRight, Upload, FileText, Download, FileUp, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuthStore } from "@/lib/cbt/auth-store";
 import { visibleModuls, allowedTopikIdSet, isUnrestricted } from "@/lib/cbt/access";
 
@@ -41,14 +42,17 @@ function ModulPage() {
   const canEdit = isUnrestricted(user);
   const [moduls, setModuls] = useState<Modul[]>(visibleModuls(user));
   const allowedSet = allowedTopikIdSet(user);
+  const mkList = mataKuliahRepo.all();
   const [nama, setNama] = useState("");
+  const [mkId, setMkId] = useState<string>("none");
   const importRef = useRef<HTMLInputElement>(null);
 
   function add() {
     if (!canEdit) return;
     if (!nama.trim()) return;
-    modulRepo.upsert({ id: uid("m_"), nama: nama.trim(), aktif: true });
+    modulRepo.upsert({ id: uid("m_"), nama: nama.trim(), aktif: true, mataKuliahId: (mkId === "none" || !mkId) ? undefined : mkId });
     setNama("");
+    setMkId("none");
     setModuls(visibleModuls(user));
     toast.success("Modul ditambahkan");
   }
@@ -158,12 +162,28 @@ function ModulPage() {
       </div>
 
       {canEdit ? (
-        <div className="flex max-w-md gap-2">
+        <div className="flex max-w-xl items-center gap-2">
           <Input
             placeholder="Nama modul baru (mis. Matematika)"
             value={nama}
             onChange={(e) => setNama(e.target.value)}
+            className="flex-1"
           />
+          <div className="w-[200px]">
+            <Select value={mkId} onValueChange={setMkId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Opsional: Mata Kuliah" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">(Tanpa Mata Kuliah)</SelectItem>
+                {mkList.map((mk) => (
+                  <SelectItem key={mk.id} value={mk.id}>
+                    {mk.nama}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button onClick={add}>
             <Plus className="mr-1 h-4 w-4" />
             Tambah
@@ -189,6 +209,7 @@ function ModulPage() {
                   <div>
                     <h3 className="font-medium">{m.nama}</h3>
                     <p className="text-xs text-muted-foreground">
+                      {m.mataKuliahId ? `MK: ${mkList.find((x) => x.id === m.mataKuliahId)?.nama ?? "-"} · ` : ""}
                       {t.length} topik · {sCount} soal
                     </p>
                   </div>

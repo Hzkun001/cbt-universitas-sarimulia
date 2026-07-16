@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { usersRepo } from "@/lib/cbt/repos";
-import { revokeUserSessionsServer, upsertUserServer } from "@/lib/server/repos/functions";
+import { usersRepo, prodiRepo } from "@/lib/cbt/repos";
+import { revokeUserSessionsServer, upsertUserServer } from "@/lib/server/users/functions";
 import { uid } from "@/lib/cbt/storage";
 import type { Role, User } from "@/lib/cbt/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,12 +30,12 @@ export const Route = createFileRoute("/_authenticated/admin/users")({
 });
 
 function UsersPage() {
-  const [users, setUsers] = useState<User[]>(usersRepo.all().filter((u) => u.role !== "peserta"));
+  const [users, setUsers] = useState<User[]>(usersRepo.all().filter((u) => u.role !== "mahasiswa"));
   const [editing, setEditing] = useState<User | null>(null);
   const [open, setOpen] = useState(false);
 
   function refresh() {
-    setUsers(usersRepo.all().filter((u) => u.role !== "peserta"));
+    setUsers(usersRepo.all().filter((u) => u.role !== "mahasiswa"));
   }
 
   return (
@@ -73,7 +73,9 @@ function UsersPage() {
                   <td className="p-3 font-mono text-xs">{u.username}</td>
                   <td className="p-3">{u.namaLengkap}</td>
                   <td className="p-3">
-                    <span className="rounded bg-accent px-2 py-0.5 text-xs">{u.role}</span>
+                    <span className="rounded bg-accent px-2 py-0.5 text-xs">
+                      {u.role === "super_admin" ? "Super Admin" : u.role === "admin_prodi" ? "Admin Prodi" : u.role === "evaluator" ? "Evaluator" : u.role}
+                    </span>
                   </td>
                   <td className="p-3">{u.aktif ? "Aktif" : "Nonaktif"}</td>
                   <td className="p-3 text-right">
@@ -155,7 +157,8 @@ function UserDialog({
   const [form, setForm] = useState({
     username: "",
     namaLengkap: "",
-    role: "operator" as Role,
+    role: "admin_prodi" as Role,
+    prodiId: "",
     aktif: true,
     password: "",
   });
@@ -165,7 +168,8 @@ function UserDialog({
     setForm({
       username: editing?.username ?? "",
       namaLengkap: editing?.namaLengkap ?? "",
-      role: editing?.role ?? "operator",
+      role: editing?.role ?? "admin_prodi",
+      prodiId: editing?.prodiId ?? "",
       aktif: editing?.aktif ?? true,
       password: "",
     });
@@ -186,6 +190,7 @@ function UserDialog({
         aktif: form.aktif,
         allowedTopikIds: editing?.allowedTopikIds ?? [],
         groupId: editing?.groupId,
+        prodiId: form.prodiId || undefined,
         detail: editing?.detail,
         createdAt: editing?.createdAt ?? Date.now(),
         newPassword: form.password.trim() || undefined,
@@ -228,11 +233,28 @@ function UserDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="operator">Operator (Guru)</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
+                <SelectItem value="admin_prodi">Admin Prodi</SelectItem>
+                <SelectItem value="evaluator">Evaluator</SelectItem>
               </SelectContent>
             </Select>
           </div>
+          {(form.role === "admin_prodi" || form.role === "mahasiswa") && (
+            <div className="space-y-1">
+              <Label>Program Studi</Label>
+              <Select value={form.prodiId} onValueChange={(v) => setForm({ ...form, prodiId: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih prodi (opsional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">-- Tidak ada --</SelectItem>
+                  {prodiRepo.all().map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.nama}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-1">
             <Label>{editing ? "Password baru (kosongkan jika tidak diubah)" : "Password"}</Label>
             <Input

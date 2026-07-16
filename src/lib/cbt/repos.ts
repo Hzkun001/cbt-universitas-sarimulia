@@ -1,10 +1,8 @@
-import {
-	claimExamToken as claimExamTokenServer,
-	getCbtSnapshot,
-	getPublicBootConfigServer,
-	mutateEntity,
-	saveConfigServer,
-} from "@/lib/server/repos/functions";
+import { getCbtSnapshot, getPublicBootConfigServer } from "@/lib/server/snapshot/functions";
+import { claimExamToken as claimExamTokenServer, saveConfigServer, mutateUjianServer, mutateTokenServer } from "@/lib/server/ujian/functions";
+import { mutateUserServer, mutateGroupServer } from "@/lib/server/users/functions";
+import { mutateModulServer, mutateTopikServer, mutateSoalServer } from "@/lib/server/modul/functions";
+import { mutateSesiServer } from "@/lib/server/sesi/functions";
 import { getTodaysExamsServer } from "@/lib/server/exams";
 import { toast } from "sonner";
 import type {
@@ -18,6 +16,12 @@ import type {
 	Topik,
 	Ujian,
 	User,
+	Fakultas,
+	Jurusan,
+	ProgramStudi,
+	TahunAkademik,
+	Semester,
+	MataKuliah,
 } from "./types";
 
 type Snapshot = Awaited<ReturnType<typeof getCbtSnapshot>>;
@@ -29,6 +33,12 @@ type MutationResult = { ok: boolean; error?: string };
 type EntityName =
 	| "users"
 	| "groups"
+	| "fakultas"
+	| "jurusan"
+	| "prodi"
+	| "tahunAkademik"
+	| "semester"
+	| "mataKuliah"
 	| "modul"
 	| "topik"
 	| "soal"
@@ -51,6 +61,12 @@ const DEFAULT_OPERATOR_NAV: NavKey[] = [
 const cache = {
 	users: [] as User[],
 	groups: [] as Group[],
+	fakultas: [] as Fakultas[],
+	jurusan: [] as Jurusan[],
+	prodi: [] as ProgramStudi[],
+	tahunAkademik: [] as TahunAkademik[],
+	semester: [] as Semester[],
+	mataKuliah: [] as MataKuliah[],
 	modul: [] as Modul[],
 	topik: [] as Topik[],
 	soal: [] as Soal[],
@@ -58,12 +74,22 @@ const cache = {
 	token: [] as TokenUjian[],
 	sesi: [] as SesiUjian[],
 	config: {
-		appName: "CBT-MAN",
+		appName: "CBT-Kampus",
+		appLogo: "",
 		appDeskripsi: "Aplikasi ujian berbasis komputer",
 		pesanLogin: "Selamat datang di aplikasi ujian online",
 		mobileLock: false,
 		multiDevice: false,
-		roleAccess: { operator: DEFAULT_OPERATOR_NAV },
+		roleAccess: {
+			admin_prodi: DEFAULT_OPERATOR_NAV,
+			evaluator: [
+				"dashboard",
+				"hasil",
+				"evaluasi",
+				"laporan",
+				"leaderboard",
+			],
+		},
 	} as AppConfig,
 };
 
@@ -76,6 +102,12 @@ export function invalidateReposCache(): void {
 function applySnapshot(snapshot: Snapshot) {
 	cache.users = snapshot.users;
 	cache.groups = snapshot.groups;
+	cache.fakultas = snapshot.fakultas;
+	cache.jurusan = snapshot.jurusan;
+	cache.prodi = snapshot.prodi;
+	cache.tahunAkademik = snapshot.tahunAkademik;
+	cache.semester = snapshot.semester;
+	cache.mataKuliah = snapshot.mataKuliah;
 	cache.modul = snapshot.modul;
 	cache.topik = snapshot.topik;
 	cache.soal = snapshot.soal;
@@ -149,9 +181,23 @@ function runEntityMutation(
 	action: "upsert" | "remove" | "bulkSet",
 	payload: unknown,
 ): Promise<MutationResult> {
-	return mutateEntity({ data: { entity, action, payload } })
+	let mutationPromise: Promise<{ ok: boolean; error?: string }>;
+	
+	switch (entity) {
+		case "users": mutationPromise = mutateUserServer({ data: { action, payload } }); break;
+		case "groups": mutationPromise = mutateGroupServer({ data: { action, payload } }); break;
+		case "modul": mutationPromise = mutateModulServer({ data: { action, payload } }); break;
+		case "topik": mutationPromise = mutateTopikServer({ data: { action, payload } }); break;
+		case "soal": mutationPromise = mutateSoalServer({ data: { action, payload } }); break;
+		case "ujian": mutationPromise = mutateUjianServer({ data: { action, payload } }); break;
+		case "token": mutationPromise = mutateTokenServer({ data: { action, payload } }); break;
+		case "sesi": mutationPromise = mutateSesiServer({ data: { action, payload } }); break;
+		default: mutationPromise = Promise.resolve({ ok: false, error: "Unknown entity" });
+	}
+
+	return mutationPromise
 		.then((result) => {
-			if (!result.ok) notifyMutationFailure(entity, result.error);
+			if (!result.ok) notifyMutationFailure(entity, result.error ?? "Unknown error");
 			return result;
 		})
 		.catch((error) => {
@@ -222,6 +268,54 @@ export const groupsRepo = createRepo(
 	() => cache.groups,
 	(items) => {
 		cache.groups = items;
+	},
+);
+
+export const fakultasRepo = createRepo(
+	"fakultas",
+	() => cache.fakultas,
+	(items) => {
+		cache.fakultas = items;
+	},
+);
+
+export const jurusanRepo = createRepo(
+	"jurusan",
+	() => cache.jurusan,
+	(items) => {
+		cache.jurusan = items;
+	},
+);
+
+export const prodiRepo = createRepo(
+	"prodi",
+	() => cache.prodi,
+	(items) => {
+		cache.prodi = items;
+	},
+);
+
+export const tahunAkademikRepo = createRepo(
+	"tahunAkademik",
+	() => cache.tahunAkademik,
+	(items) => {
+		cache.tahunAkademik = items;
+	},
+);
+
+export const semesterRepo = createRepo(
+	"semester",
+	() => cache.semester,
+	(items) => {
+		cache.semester = items;
+	},
+);
+
+export const mataKuliahRepo = createRepo(
+	"mataKuliah",
+	() => cache.mataKuliah,
+	(items) => {
+		cache.mataKuliah = items;
 	},
 );
 

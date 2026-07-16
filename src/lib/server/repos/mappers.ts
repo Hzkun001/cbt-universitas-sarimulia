@@ -1,11 +1,17 @@
 import { z } from "zod";
-import type { AppConfig, Group, Modul, NavKey, Soal, SesiUjian, TokenUjian, Topik, Ujian, User } from "@/lib/cbt/types";
+import type { AppConfig, Group, Modul, NavKey, Soal, SesiUjian, TokenUjian, Topik, Ujian, User, Fakultas, Jurusan, ProgramStudi, TahunAkademik, Semester, MataKuliah } from "@/lib/cbt/types";
 import { prisma } from "@/lib/server/db/prisma";
 import { parseJson, toNumber } from "@/lib/server/db/json";
 
 export type Snapshot = {
 	users: User[];
 	groups: Group[];
+	fakultas: Fakultas[];
+	jurusan: Jurusan[];
+	prodi: ProgramStudi[];
+	tahunAkademik: TahunAkademik[];
+	semester: Semester[];
+	mataKuliah: MataKuliah[];
 	modul: Modul[];
 	topik: Topik[];
 	soal: Soal[];
@@ -17,7 +23,7 @@ export type Snapshot = {
 
 export type PublicBootConfig = Pick<
 	AppConfig,
-	"appName" | "appDeskripsi" | "pesanLogin"
+	"appName" | "appLogo" | "appDeskripsi" | "pesanLogin"
 >;
 
 export type UserRow = Awaited<ReturnType<typeof prisma.user.findMany>>[number];
@@ -27,6 +33,12 @@ export type SoalRow = Awaited<ReturnType<typeof prisma.soal.findMany>>[number] &
 export type SnapshotRows = {
 	users: UserRow[];
 	groups: Group[];
+	fakultas: Fakultas[];
+	jurusan: Jurusan[];
+	prodi: ProgramStudi[];
+	tahunAkademik: TahunAkademik[];
+	semester: Semester[];
+	mataKuliah: MataKuliah[];
 	modul: Modul[];
 	topik: Topik[];
 	soal: SoalRow[];
@@ -36,10 +48,16 @@ export type SnapshotRows = {
 	config: Awaited<ReturnType<typeof prisma.appConfig.findUnique>>;
 };
 
-export const roleSchema = z.enum(["admin", "operator", "peserta"]);
+export const roleSchema = z.enum(["super_admin", "admin_prodi", "evaluator", "mahasiswa"]);
 export const entitySchema = z.enum([
 	"users",
 	"groups",
+	"fakultas",
+	"jurusan",
+	"prodi",
+	"tahunAkademik",
+	"semester",
+	"mataKuliah",
 	"modul",
 	"topik",
 	"soal",
@@ -54,6 +72,8 @@ export const upsertUserSchema = z.object({
 	role: roleSchema,
 	allowedTopikIds: z.array(z.string()).default([]),
 	groupId: z.string().min(1).optional(),
+	prodiId: z.string().min(1).optional(),
+	mataKuliahIds: z.array(z.string()).default([]),
 	detail: z.string().optional(),
 	aktif: z.boolean(),
 	createdAt: z.number().optional(),
@@ -81,6 +101,8 @@ export function mapUser(row: UserRow): User {
 		role: row.role,
 		allowedTopikIds: parseJson(row.allowedTopikIds, []),
 		groupId: row.groupId ?? undefined,
+		prodiId: row.prodiId ?? undefined,
+		mataKuliahIds: parseJson(row.mataKuliahIds, []),
 		detail: row.detail ?? undefined,
 		aktif: row.aktif,
 		createdAt: Number(row.createdAt),
@@ -126,6 +148,8 @@ export function mapUjian(
 		tokenAktif: row.tokenAktif,
 		ipRange: row.ipRange,
 		groupIds: parseJson(row.groupIds, []),
+		mataKuliahId: row.mataKuliahId ?? undefined,
+		semesterId: row.semesterId ?? undefined,
 		topicSets: parseJson(row.topicSets, []),
 		showResult: row.showResult,
 		showResultDetail: row.showResultDetail,
@@ -175,7 +199,8 @@ export function mapSesi(
 
 export function buildConfig(config: SnapshotRows["config"]): AppConfig {
 	return {
-		appName: config?.appName ?? "CBT-MAN",
+		appName: config?.appName ?? "CBT-Kampus",
+		appLogo: config?.appLogo ?? "",
 		appDeskripsi: config?.appDeskripsi ?? "Aplikasi ujian berbasis komputer",
 		pesanLogin: config?.pesanLogin ?? "Selamat datang di aplikasi ujian online",
 		mobileLock: config?.mobileLock ?? false,
@@ -192,6 +217,7 @@ export function buildPublicBootConfig(
 	const full = buildConfig(config);
 	return {
 		appName: full.appName,
+		appLogo: full.appLogo,
 		appDeskripsi: full.appDeskripsi,
 		pesanLogin: full.pesanLogin,
 	};

@@ -3,7 +3,7 @@
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-active-2ea44f)
 
-**CBT-MAN** adalah aplikasi **Computer-Based Test (CBT)** untuk dunia pendidikan, dibangun dengan **TanStack Start, React, TypeScript, Prisma, dan SQLite**.
+**CBT-Kampus** adalah aplikasi **Computer-Based Test (CBT)** untuk dunia pendidikan, dibangun dengan **TanStack Start, React, TypeScript, Prisma, dan SQLite**.
 
 > Didedikasikan untuk pendidikan. Open source under lisensi MIT.
 

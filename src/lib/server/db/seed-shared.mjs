@@ -1,10 +1,17 @@
 const DEFAULT_ROLE_ACCESS = {
-  operator: [
+  admin_prodi: [
     "dashboard",
     "peserta",
     "modul",
     "files",
     "ujian",
+    "hasil",
+    "evaluasi",
+    "laporan",
+    "leaderboard",
+  ],
+  evaluator: [
+    "dashboard",
     "hasil",
     "evaluasi",
     "laporan",
@@ -135,7 +142,7 @@ export async function createSeedDataset({ uid, now, hashPassword }) {
     username: "admin",
     passwordHash: await hashPassword("admin123"),
     namaLengkap: "Rahmawati Kusuma, M.Pd",
-    role: "admin",
+    role: "super_admin",
     allowedTopikIds: [],
     detail: `${schoolName} · Kepala Sistem CBT`,
     aktif: true,
@@ -147,11 +154,23 @@ export async function createSeedDataset({ uid, now, hashPassword }) {
     username: "operator1",
     passwordHash: await hashPassword("operator123"),
     namaLengkap: "Budi Santoso, S.Kom",
-    role: "operator",
+    role: "admin_prodi",
     allowedTopikIds: [],
     detail: `${schoolName} · Operator Laboratorium Komputer`,
     aktif: true,
     createdAt: ts + 1,
+  };
+
+  const evaluator1 = {
+    id: uid("u_"),
+    username: "evaluator1",
+    passwordHash: await hashPassword("evaluator123"),
+    namaLengkap: "Dr. Evaluator Utama",
+    role: "evaluator",
+    allowedTopikIds: [],
+    detail: `${schoolName} · Evaluator Penilaian Ujian`,
+    aktif: true,
+    createdAt: ts + 2,
   };
 
   const guruNames = [
@@ -186,14 +205,14 @@ export async function createSeedDataset({ uid, now, hashPassword }) {
     { id: uid("t_"), modulId: modul[2].id, nama: "Kompleksitas Waktu (Big O)" },
   ];
 
-  const users = [admin, operator];
+  const users = [admin, operator, evaluator1];
   for (const [username, namaLengkap] of guruNames) {
     users.push({
       id: uid("u_"),
       username,
       passwordHash: await hashPassword("dosen123"),
       namaLengkap,
-      role: "operator",
+      role: "admin_prodi",
       allowedTopikIds: [],
       detail: `${schoolName} · Dosen Pengampu`,
       aktif: true,
@@ -206,7 +225,7 @@ export async function createSeedDataset({ uid, now, hashPassword }) {
       username,
       passwordHash: await hashPassword("peserta123"),
       namaLengkap,
-      role: "peserta",
+      role: "mahasiswa",
       allowedTopikIds: [],
       groupId,
       detail: `${schoolName} · Mahasiswa aktif`,
@@ -261,7 +280,7 @@ export async function createSeedDataset({ uid, now, hashPassword }) {
     };
   });
 
-  const peserta = users.filter((item) => item.role === "peserta");
+  const peserta = users.filter((item) => item.role === "mahasiswa");
 
   const ujian = [
     {

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ujianRepo, sesiRepo, tokenRepo, hydrateRepos, claimExamToken } from "@/lib/cbt/repos";
+import { ujianRepo, sesiRepo, tokenRepo, hydrateRepos, claimExamToken, mataKuliahRepo, semesterRepo } from "@/lib/cbt/repos";
 import { useAuthStore } from "@/lib/cbt/auth-store";
 import { findOrCreateSesi, startSesi } from "@/lib/cbt/exam";
 import {
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { RichView } from "@/components/cbt/RichEditor";
-import { Clock, AlertTriangle, CalendarClock, CalendarX, ShieldOff } from "lucide-react";
+import { Clock, AlertTriangle, CalendarClock, CalendarX, ShieldOff, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/peserta/ujian/$id")({
   loader: async () => {
@@ -179,20 +179,41 @@ function PreUjianContent({
     }
   }
 
+  const mk = ujian.mataKuliahId ? mataKuliahRepo.byId(ujian.mataKuliahId) : null;
+  const smt = ujian.semesterId ? semesterRepo.byId(ujian.semesterId) : null;
+
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
-      <Link to="/peserta" className="text-sm text-muted-foreground hover:underline">
-        ← Daftar ujian
-      </Link>
-      <h1 className="text-2xl font-semibold tracking-tight">{ujian.nama}</h1>
-      <Card>
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4" />
-            Durasi {ujian.durasiMenit} menit · {ujian.topicSets.reduce((a, b) => a + b.jumlah, 0)}{" "}
-            soal
+    <div className="max-w-2xl mx-auto space-y-6 pb-10">
+      <div>
+        <Link to="/peserta" className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 w-fit mb-3">
+          ← Kembali ke daftar ujian
+        </Link>
+        <h1 className="text-3xl font-bold tracking-tight">{ujian.nama}</h1>
+        {mk && (
+          <p className="text-lg text-muted-foreground mt-1">
+            {mk.nama} {smt ? `· ${smt.nama}` : ""}
+          </p>
+        )}
+      </div>
+
+      <Card className="overflow-hidden shadow-md">
+        <div className="bg-primary/5 p-4 border-b">
+          <div className="flex items-center gap-4 text-sm font-medium text-primary/80">
+            <div className="flex items-center gap-1.5 bg-background px-3 py-1.5 rounded-full shadow-sm">
+              <Clock className="h-4 w-4" />
+              {ujian.durasiMenit} menit
+            </div>
+            <div className="flex items-center gap-1.5 bg-background px-3 py-1.5 rounded-full shadow-sm">
+              <FileText className="h-4 w-4" />
+              {ujian.topicSets.reduce((a, b) => a + b.jumlah, 0)} soal
+            </div>
           </div>
-          <RichView html={ujian.deskripsi || "<p><em>Tidak ada deskripsi.</em></p>"} />
+        </div>
+        
+        <CardContent className="p-6 space-y-6">
+          <div className="prose prose-sm max-w-none text-muted-foreground">
+            <RichView html={ujian.deskripsi || "<p><em>Tidak ada instruksi khusus.</em></p>"} />
+          </div>
           {!examAllowed && (
             <div
               role="alert"
@@ -219,33 +240,44 @@ function PreUjianContent({
               .
             </div>
           )}
-          <div className="rounded border border-warning/30 bg-warning/10 p-3 text-sm space-y-1">
-            <div className="flex items-center gap-2 font-medium">
-              <AlertTriangle className="h-4 w-4" />
-              Aturan
+          <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm space-y-2">
+            <div className="flex items-center gap-2 font-semibold text-warning-foreground">
+              <AlertTriangle className="h-5 w-5" />
+              Aturan Ujian
             </div>
-            <ul className="ml-5 list-disc text-xs">
-              {ujian.fullscreenWajib && <li>Ujian wajib dalam mode fullscreen.</li>}
+            <ul className="ml-6 list-disc text-muted-foreground space-y-1">
+              {ujian.fullscreenWajib && <li>Ujian wajib dikerjakan dalam mode <strong>fullscreen</strong>.</li>}
               {ujian.maxPindahTab > 0 && (
-                <li>Pindah tab/aplikasi maksimal {ujian.maxPindahTab}× sebelum auto-submit.</li>
+                <li>Pindah tab/aplikasi maksimal <strong>{ujian.maxPindahTab}×</strong> sebelum ujian dikumpulkan otomatis.</li>
               )}
-              {ujian.blokirShortcut && <li>Copy, paste, dan klik kanan dinonaktifkan.</li>}
-              <li>Waktu berjalan otomatis sejak Anda menekan "Mulai".</li>
+              {ujian.blokirShortcut && <li>Fungsi copy, paste, dan klik kanan dinonaktifkan.</li>}
+              <li>Waktu akan berjalan mundur otomatis sejak Anda menekan tombol "Mulai".</li>
             </ul>
           </div>
-          {ujian.tokenAktif && (
-            <div>
-              <Label htmlFor={tokenInputId}>Token ujian</Label>
-              <Input id={tokenInputId} value={token} onChange={(e) => setToken(e.target.value)} />
-            </div>
-          )}
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-            Saya bersedia mengikuti ujian dengan jujur.
-          </label>
-          <Button className="w-full" onClick={mulai} disabled={!!sesiSelesai || !examAllowed}>
-            Mulai Ujian
-          </Button>
+
+          <div className="bg-muted/30 p-5 rounded-lg border space-y-4">
+            {ujian.tokenAktif && (
+              <div className="space-y-1.5">
+                <Label htmlFor={tokenInputId} className="font-semibold">Token Ujian</Label>
+                <Input 
+                  id={tokenInputId} 
+                  value={token} 
+                  onChange={(e) => setToken(e.target.value)}
+                  placeholder="Masukkan token dari pengawas"
+                  className="max-w-xs text-lg tracking-widest uppercase"
+                />
+              </div>
+            )}
+            
+            <label className="flex items-center gap-3 text-sm font-medium cursor-pointer">
+              <input type="checkbox" className="w-4 h-4 rounded border-primary/50 text-primary focus:ring-primary" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+              Saya telah membaca aturan dan bersedia mengikuti ujian dengan jujur.
+            </label>
+            
+            <Button size="lg" className="w-full sm:w-auto mt-2" onClick={mulai} disabled={!!sesiSelesai || !examAllowed}>
+              {sesiSelesai ? "Selesai" : "Mulai Ujian Sekarang"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

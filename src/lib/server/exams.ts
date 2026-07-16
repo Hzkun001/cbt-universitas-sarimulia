@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { prisma } from "@/lib/server/db/prisma";
 
-import { mapUjian } from "@/lib/server/repos/functions";
-import { seedIfNeeded } from "@/lib/server/repos/functions";
+import { mapUjian } from "@/lib/server/repos/mappers";
+import { seedIfNeeded } from "@/lib/server/db/auth";
 
 export const getTodaysExamsServer = createServerFn({ method: "GET" }).handler(
 	async () => {

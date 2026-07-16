@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { RichView } from "@/components/cbt/RichEditor";
 import { AudioPlayer } from "@/components/cbt/AudioPlayer";
 import { cn } from "@/lib/utils";
-import { Flag, Clock, AlertTriangle } from "lucide-react";
+import { Flag, Clock, AlertTriangle, Save, Loader2, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/peserta/ujian/$id/kerjakan")({
   loader: async () => {
@@ -43,6 +43,7 @@ function Kerjakan() {
   const [idx, setIdx] = useState(0);
   const [cheatWarning, setCheatWarning] = useState(0);
   const [remaining, setRemaining] = useState(0);
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
   const submittingRef = useRef(false);
   const sesiRef = useRef<SesiUjian | null>(initSesi ?? null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,10 +56,14 @@ function Kerjakan() {
   // Debounced persist: tulis sesi ke server setelah jeda, coalesce tulisan cepat.
   function persistSesi(next: SesiUjian, delay = 500) {
     if (submittingRef.current) return;
+    setSaveStatus("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       saveTimer.current = null;
-      if (!submittingRef.current) sesiRepo.upsert(next);
+      if (!submittingRef.current) {
+        sesiRepo.upsert(next);
+        setSaveStatus("saved");
+      }
     }, delay);
   }
 
@@ -228,36 +233,51 @@ function Kerjakan() {
   const danger = remaining < 60_000;
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <header className="sticky top-0 z-10 border-b bg-card">
-        <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-2">
+    <div className="min-h-screen bg-muted/20 pb-20">
+      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md shadow-sm">
+        <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-3">
           <div className="text-sm">
-            <div className="font-medium">{currentUjian.nama}</div>
-            <div className="text-xs text-muted-foreground">
-              {currentUser.namaLengkap} · Soal {idx + 1} / {currentSesi.soalIds.length}
+            <div className="font-bold text-base tracking-tight">{currentUjian.nama}</div>
+            <div className="text-xs text-muted-foreground flex items-center gap-2">
+              <span className="font-medium">{currentUser.namaLengkap}</span>
+              <span>·</span>
+              <span>Soal {idx + 1} / {currentSesi.soalIds.length}</span>
             </div>
           </div>
-          <div
-            className={cn(
-              "flex items-center gap-2 rounded-md px-3 py-1.5 font-mono text-lg font-bold tabular-nums",
-              danger
-                ? "bg-destructive text-destructive-foreground"
-                : "bg-accent text-accent-foreground",
-            )}
-          >
-            <Clock className="h-5 w-5" />
-            {String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
+              {saveStatus === "saving" ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Menyimpan...</>
+              ) : saveStatus === "error" ? (
+                <><AlertTriangle className="h-3.5 w-3.5 text-destructive" /> Gagal simpan</>
+              ) : (
+                <><CheckCircle2 className="h-3.5 w-3.5 text-primary" /> Tersimpan</>
+              )}
+            </div>
+            <div
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-4 py-2 font-mono text-lg font-bold tabular-nums shadow-sm transition-colors",
+                danger
+                  ? "bg-destructive text-destructive-foreground animate-pulse"
+                  : "bg-primary text-primary-foreground",
+              )}
+            >
+              <Clock className="h-5 w-5" />
+              {String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto grid gap-4 p-4 lg:grid-cols-[1fr_280px]">
-        <Card>
-          <CardContent className="p-5 space-y-4">
-            <div className="text-xs text-muted-foreground">
-              Soal #{idx + 1} · {currentSoal.tipe}
+      <div className="container mx-auto grid gap-6 p-4 lg:grid-cols-[1fr_300px] mt-4">
+        <Card className="shadow-md border-0 ring-1 ring-border/50">
+          <CardContent className="p-6 sm:p-8 space-y-6">
+            <div className="text-sm font-medium text-primary/80 bg-primary/10 w-fit px-3 py-1 rounded-full">
+              Soal #{idx + 1}
             </div>
-            <RichView html={currentSoal.detail} />
+            <div className="prose prose-sm sm:prose-base max-w-none">
+              <RichView html={currentSoal.detail} />
+            </div>
             {currentSoal.audioFileId && (
               <AudioPlayer
                 fileId={currentSoal.audioFileId}
@@ -326,31 +346,33 @@ function Kerjakan() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="text-sm font-medium">Navigasi Soal</div>
-            <div className="grid grid-cols-5 gap-1.5">
-              {currentSesi.soalIds.map((_, i) => {
-                const a = currentSesi.jawaban[i];
-                const dijawab = a.jawabanIds.length > 0 || a.jawabanEssay.length > 0;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setIdx(i)}
-                    className={cn(
-                      "h-9 rounded text-xs font-medium border transition",
-                      i === idx && "ring-2 ring-primary",
-                      a.ragu
-                        ? "bg-warning/20 border-warning/40"
-                        : dijawab
-                          ? "bg-success/20 border-success/40"
-                          : "bg-muted",
-                    )}
-                  >
-                    {i + 1}
-                  </button>
-                );
-              })}
+        <Card className="shadow-sm h-fit sticky top-24">
+          <CardContent className="p-5 space-y-5">
+            <div>
+              <h3 className="font-semibold text-lg mb-3">Navigasi Soal</h3>
+              <div className="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-5 gap-2">
+                {currentSesi.soalIds.map((_, i) => {
+                  const a = currentSesi.jawaban[i];
+                  const dijawab = a.jawabanIds.length > 0 || a.jawabanEssay.length > 0;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setIdx(i)}
+                      className={cn(
+                        "h-9 rounded text-xs font-medium border transition",
+                        i === idx && "ring-2 ring-primary",
+                        a.ragu
+                          ? "bg-warning/20 border-warning/40"
+                          : dijawab
+                            ? "bg-success/20 border-success/40"
+                            : "bg-muted",
+                      )}
+                    >
+                      {i + 1}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="text-xs text-muted-foreground space-y-1">
               <div>

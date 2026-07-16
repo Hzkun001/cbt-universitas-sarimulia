@@ -1,4 +1,4 @@
-# Daftar Tugas — CBT-MAN v2
+# Daftar Tugas — CBT-Kampus v2
 **Task List & Implementation Checklist**
 **Versi:** 2.0
 **Terakhir diperbarui:** Juli 2026
@@ -19,10 +19,10 @@
 
 ## Fase 0 — Persiapan
 
-- [ ] 🔴 Buat branch `v2-dev` dari `main`
-- [ ] 🔴 Pastikan seluruh test v1 lulus di branch baru (`npm run test:unit`, `npm run typecheck`, `npm run lint`)
-- [ ] 🔴 Dokumentasikan snapshot state v1 (versi semua dependensi, jumlah baris kode, daftar route)
-- [ ] 🔴 Siapkan lingkungan staging dengan database SQLite tersedia untuk pengujian integrasi
+- [x] 🔴 Buat branch `v2-dev` dari `main`
+- [x] 🔴 Pastikan seluruh test v1 lulus di branch baru (`npm run test:unit`, `npm run typecheck`, `npm run lint`)
+- [x] 🔴 Dokumentasikan snapshot state v1 (versi semua dependensi, jumlah baris kode, daftar route)
+- [x] 🔴 Siapkan lingkungan staging dengan database SQLite tersedia untuk pengujian integrasi
 
 ---
 
@@ -30,7 +30,7 @@
 
 > **Konteks:** `src/lib/server/repos/functions.ts` saat ini ~1.400 baris. Semua logika auth, user, modul, soal, ujian, sesi, backup ada di satu file. Ini harus dipecah tanpa mengubah perilaku.
 
-- [ ] 🔴 Buat folder struktur baru:
+- [x] 🔴 Buat folder struktur baru:
   ```
   src/lib/server/auth/functions.ts
   src/lib/server/users/functions.ts
@@ -41,17 +41,17 @@
   src/lib/server/audit/functions.ts
   src/lib/server/backup/functions.ts
   ```
-- [ ] 🔴 Pindahkan `loginServer`, `logoutServer`, `validateSessionServer` ke `auth/functions.ts`
-- [ ] 🔴 Pindahkan CRUD user & group ke `users/functions.ts`
-- [ ] 🔴 Pindahkan CRUD modul, topik, soal ke `modul/functions.ts`
-- [ ] 🔴 Pindahkan CRUD ujian & token ke `ujian/functions.ts`
-- [ ] 🔴 Pindahkan create/update/grade sesi ke `sesi/functions.ts`
-- [ ] 🔴 Pindahkan `getCbtSnapshot`, `getPublicBootConfigServer` ke `snapshot/functions.ts`
-- [ ] 🔴 Pindahkan `importBackupServer`, `resetAllDataServer` ke `backup/functions.ts`
-- [ ] 🔴 Perbarui semua import di `src/lib/cbt/repos.ts` dan `src/lib/cbt/auth-store.ts`
-- [ ] 🔴 Perbarui semua import di seluruh route (`src/routes/_authenticated/`)
-- [ ] 🔴 Hapus file `src/lib/server/repos/functions.ts` yang lama setelah semua import diperbarui
-- [ ] 🔴 Jalankan `npm run typecheck` dan `npm run test:unit` — pastikan tidak ada regresi
+- [x] 🔴 Pindahkan `loginServer`, `logoutServer`, `validateSessionServer` ke `auth/functions.ts`
+- [x] 🔴 Pindahkan CRUD user & group ke `users/functions.ts`
+- [x] 🔴 Pindahkan CRUD modul, topik, soal ke `modul/functions.ts`
+- [x] 🔴 Pindahkan CRUD ujian & token ke `ujian/functions.ts`
+- [x] 🔴 Pindahkan create/update/grade sesi ke `sesi/functions.ts`
+- [x] 🔴 Pindahkan `getCbtSnapshot`, `getPublicBootConfigServer` ke `snapshot/functions.ts`
+- [x] 🔴 Pindahkan `importBackupServer`, `resetAllDataServer` ke `backup/functions.ts`
+- [x] 🔴 Perbarui semua import di `src/lib/cbt/repos.ts` dan `src/lib/cbt/auth-store.ts`
+- [x] 🔴 Perbarui semua import di seluruh route (`src/routes/_authenticated/`)
+- [x] 🔴 Hapus file `src/lib/server/repos/functions.ts` yang lama setelah semua import diperbarui
+- [x] 🔴 Jalankan `npm run typecheck` dan `npm run test:unit` — pastikan tidak ada regresi
 
 ---
 

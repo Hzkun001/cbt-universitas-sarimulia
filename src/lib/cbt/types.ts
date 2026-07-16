@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // ---------------- Enums ----------------
-export const RoleEnum = z.enum(["admin", "operator", "peserta"]);
+export const RoleEnum = z.enum(["super_admin", "admin_prodi", "evaluator", "mahasiswa"]);
 export type Role = z.infer<typeof RoleEnum>;
 
 export const TipeSoalEnum = z.enum(["pg", "multi", "bs", "essay"]);
@@ -18,6 +18,51 @@ export const StatusSesiEnum = z.enum([
 ]);
 export type StatusSesi = z.infer<typeof StatusSesiEnum>;
 
+// ---------------- Master Akademik ----------------
+export const FakultasSchema = z.object({
+	id: z.string(),
+	nama: z.string(),
+});
+export type Fakultas = z.infer<typeof FakultasSchema>;
+
+export const JurusanSchema = z.object({
+	id: z.string(),
+	nama: z.string(),
+	fakultasId: z.string(),
+});
+export type Jurusan = z.infer<typeof JurusanSchema>;
+
+export const ProgramStudiSchema = z.object({
+	id: z.string(),
+	nama: z.string(),
+	jurusanId: z.string(),
+});
+export type ProgramStudi = z.infer<typeof ProgramStudiSchema>;
+
+export const TahunAkademikSchema = z.object({
+	id: z.string(),
+	nama: z.string(),
+	aktif: z.boolean().default(false),
+});
+export type TahunAkademik = z.infer<typeof TahunAkademikSchema>;
+
+export const SemesterSchema = z.object({
+	id: z.string(),
+	nama: z.string(),
+	tahunAkademikId: z.string(),
+});
+export type Semester = z.infer<typeof SemesterSchema>;
+
+export const MataKuliahSchema = z.object({
+	id: z.string(),
+	kode: z.string(),
+	nama: z.string(),
+	sks: z.number().int().default(2),
+	prodiId: z.string(),
+	semesterId: z.string(),
+});
+export type MataKuliah = z.infer<typeof MataKuliahSchema>;
+
 // ---------------- User & Role ----------------
 export const UserSchema = z.object({
 	id: z.string(),
@@ -27,6 +72,8 @@ export const UserSchema = z.object({
 	role: RoleEnum,
 	allowedTopikIds: z.array(z.string()).default([]),
 	groupId: z.string().optional(),
+	prodiId: z.string().optional(),
+	mataKuliahIds: z.array(z.string()).default([]),
 	detail: z.string().optional(),
 	aktif: z.boolean().default(true),
 	createdAt: z.number(),
@@ -37,6 +84,7 @@ export const GroupSchema = z.object({
 	id: z.string(),
 	nama: z.string(),
 	keterangan: z.string().default(""),
+	prodiId: z.string().optional(),
 });
 export type Group = z.infer<typeof GroupSchema>;
 
@@ -45,6 +93,7 @@ export const ModulSchema = z.object({
 	id: z.string(),
 	nama: z.string(),
 	aktif: z.boolean().default(true),
+	mataKuliahId: z.string().optional(),
 });
 export type Modul = z.infer<typeof ModulSchema>;
 
@@ -104,6 +153,8 @@ export const UjianSchema = z.object({
 	// input exposes it today; real CIDR/IP enforcement is deferred to V2.
 	ipRange: z.string().default(""),
 	groupIds: z.array(z.string()).default([]),
+	mataKuliahId: z.string().optional(),
+	semesterId: z.string().optional(),
 	topicSets: z.array(TopicSetSchema).default([]),
 	showResult: z.boolean().default(true),
 	showResultDetail: z.boolean().default(false),
@@ -161,6 +212,7 @@ export type SesiUjian = z.infer<typeof SesiUjianSchema>;
 export const NAV_KEYS = [
 	"dashboard",
 	"users",
+	"akademik",
 	"peserta",
 	"modul",
 	"files",
@@ -175,7 +227,8 @@ export const NAV_KEYS = [
 export type NavKey = (typeof NAV_KEYS)[number];
 
 export const ConfigSchema = z.object({
-	appName: z.string().default("CBT-MAN"),
+	appName: z.string().default("CBT-Kampus"),
+	appLogo: z.string().default(""),
 	appDeskripsi: z.string().default("Aplikasi ujian berbasis komputer"),
 	pesanLogin: z.string().default("Selamat datang di aplikasi ujian online"),
 	// mobileLock / multiDevice: stored but NOT enforced (Issue #13, V1

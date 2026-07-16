@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { configRepo, hydrateRepos } from "@/lib/cbt/repos";
 import { ConfigSchema } from "@/lib/cbt/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Settings } from "lucide-react";
+import { Settings, Upload, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/pengaturan")({
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/admin/pengaturan")({
 
 function PengaturanPage() {
   const [cfg, setCfg] = useState(configRepo.get());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function save() {
     const parsed = ConfigSchema.safeParse(cfg);
@@ -33,6 +34,26 @@ function PengaturanPage() {
     }
     configRepo.set(parsed.data);
     toast.success("Pengaturan disimpan.");
+  }
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("File harus berupa gambar (PNG, JPG, dll).");
+      return;
+    }
+
+    try {
+      const base64Str = await resizeImage(file, 200);
+      setCfg({ ...cfg, appLogo: base64Str });
+      toast.success("Logo berhasil ditambahkan.");
+    } catch (err) {
+      toast.error("Gagal memproses gambar logo.");
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
   return (
@@ -61,6 +82,39 @@ function PengaturanPage() {
               value={cfg.appName}
               onChange={(e) => setCfg({ ...cfg, appName: e.target.value })}
             />
+          </div>
+          <div>
+            <Label>URL Logo Aplikasi (Opsional)</Label>
+            <div className="flex gap-4 items-start mt-1.5">
+              <div className="flex-1 space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={cfg.appLogo ?? ""}
+                    placeholder="https://.../logo.png atau klik Upload"
+                    onChange={(e) => setCfg({ ...cfg, appLogo: e.target.value })}
+                  />
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    ref={fileInputRef} 
+                    onChange={handleLogoUpload}
+                  />
+                  <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">Kosongkan untuk menggunakan ikon bawaan sistem. Gambar yang diupload akan dikompresi otomatis.</p>
+              </div>
+              <div className="h-12 w-12 rounded-lg border bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden">
+                {cfg.appLogo ? (
+                  <img src={cfg.appLogo} alt="Logo" className="h-8 w-8 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
+                ) : (
+                  <span className="text-xs text-muted-foreground">None</span>
+                )}
+              </div>
+            </div>
           </div>
           <div>
             <Label>Deskripsi</Label>
@@ -143,4 +197,46 @@ function ToggleRow({
       <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </div>
   );
+}
+
+async function resizeImage(file: File, maxWidthOrHeight: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidthOrHeight || height > maxWidthOrHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidthOrHeight) / width);
+            width = maxWidthOrHeight;
+          } else {
+            width = Math.round((width * maxWidthOrHeight) / height);
+            height = maxWidthOrHeight;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Canvas not supported"));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Use webp for better compression, fallback to png
+        resolve(canvas.toDataURL("image/webp", 0.8));
+      };
+      img.onerror = () => reject(new Error("Invalid image"));
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }

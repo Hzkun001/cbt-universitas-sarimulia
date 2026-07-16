@@ -27,7 +27,9 @@ import { Route as AuthenticatedAdminLaporanRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminHasilRouteImport } from './routes/_authenticated/admin.hasil'
 import { Route as AuthenticatedAdminFilesRouteImport } from './routes/_authenticated/admin.files'
 import { Route as AuthenticatedAdminEvaluasiRouteImport } from './routes/_authenticated/admin.evaluasi'
+import { Route as AuthenticatedAdminAkademikRouteImport } from './routes/_authenticated/admin.akademik'
 import { Route as AuthenticatedAdminLeaderboardIndexRouteImport } from './routes/_authenticated/admin.leaderboard.index'
+import { Route as AuthenticatedAdminAkademikIndexRouteImport } from './routes/_authenticated/admin.akademik.index'
 import { Route as AuthenticatedPesertaUjianIdRouteImport } from './routes/_authenticated/peserta.ujian.$id'
 import { Route as AuthenticatedAdminUsersRolesRouteImport } from './routes/_authenticated/admin.users.roles'
 import { Route as AuthenticatedAdminUjianIdRouteImport } from './routes/_authenticated/admin.ujian.$id'
@@ -41,6 +43,12 @@ import { Route as AuthenticatedAdminLaporanRekapRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminLaporanAnalisisRouteImport } from './routes/_authenticated/admin.laporan.analisis'
 import { Route as AuthenticatedAdminHasilIdRouteImport } from './routes/_authenticated/admin.hasil.$id'
 import { Route as AuthenticatedAdminEvaluasiIdRouteImport } from './routes/_authenticated/admin.evaluasi.$id'
+import { Route as AuthenticatedAdminAkademikTahunAkademikRouteImport } from './routes/_authenticated/admin.akademik.tahun-akademik'
+import { Route as AuthenticatedAdminAkademikSemesterRouteImport } from './routes/_authenticated/admin.akademik.semester'
+import { Route as AuthenticatedAdminAkademikProdiRouteImport } from './routes/_authenticated/admin.akademik.prodi'
+import { Route as AuthenticatedAdminAkademikMataKuliahRouteImport } from './routes/_authenticated/admin.akademik.mata-kuliah'
+import { Route as AuthenticatedAdminAkademikJurusanRouteImport } from './routes/_authenticated/admin.akademik.jurusan'
+import { Route as AuthenticatedAdminAkademikFakultasRouteImport } from './routes/_authenticated/admin.akademik.fakultas'
 import { Route as AuthenticatedPesertaUjianIdKerjakanRouteImport } from './routes/_authenticated/peserta.ujian.$id.kerjakan'
 import { Route as AuthenticatedPesertaUjianIdHasilRouteImport } from './routes/_authenticated/peserta.ujian.$id.hasil'
 import { Route as AuthenticatedAdminUjianIdTokenRouteImport } from './routes/_authenticated/admin.ujian.$id.token'
@@ -142,11 +150,23 @@ const AuthenticatedAdminEvaluasiRoute =
     path: '/evaluasi',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAkademikRoute =
+  AuthenticatedAdminAkademikRouteImport.update({
+    id: '/akademik',
+    path: '/akademik',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminLeaderboardIndexRoute =
   AuthenticatedAdminLeaderboardIndexRouteImport.update({
     id: '/leaderboard/',
     path: '/leaderboard/',
     getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminAkademikIndexRoute =
+  AuthenticatedAdminAkademikIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAdminAkademikRoute,
   } as any)
 const AuthenticatedPesertaUjianIdRoute =
   AuthenticatedPesertaUjianIdRouteImport.update({
@@ -226,6 +246,42 @@ const AuthenticatedAdminEvaluasiIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedAdminEvaluasiRoute,
   } as any)
+const AuthenticatedAdminAkademikTahunAkademikRoute =
+  AuthenticatedAdminAkademikTahunAkademikRouteImport.update({
+    id: '/tahun-akademik',
+    path: '/tahun-akademik',
+    getParentRoute: () => AuthenticatedAdminAkademikRoute,
+  } as any)
+const AuthenticatedAdminAkademikSemesterRoute =
+  AuthenticatedAdminAkademikSemesterRouteImport.update({
+    id: '/semester',
+    path: '/semester',
+    getParentRoute: () => AuthenticatedAdminAkademikRoute,
+  } as any)
+const AuthenticatedAdminAkademikProdiRoute =
+  AuthenticatedAdminAkademikProdiRouteImport.update({
+    id: '/prodi',
+    path: '/prodi',
+    getParentRoute: () => AuthenticatedAdminAkademikRoute,
+  } as any)
+const AuthenticatedAdminAkademikMataKuliahRoute =
+  AuthenticatedAdminAkademikMataKuliahRouteImport.update({
+    id: '/mata-kuliah',
+    path: '/mata-kuliah',
+    getParentRoute: () => AuthenticatedAdminAkademikRoute,
+  } as any)
+const AuthenticatedAdminAkademikJurusanRoute =
+  AuthenticatedAdminAkademikJurusanRouteImport.update({
+    id: '/jurusan',
+    path: '/jurusan',
+    getParentRoute: () => AuthenticatedAdminAkademikRoute,
+  } as any)
+const AuthenticatedAdminAkademikFakultasRoute =
+  AuthenticatedAdminAkademikFakultasRouteImport.update({
+    id: '/fakultas',
+    path: '/fakultas',
+    getParentRoute: () => AuthenticatedAdminAkademikRoute,
+  } as any)
 const AuthenticatedPesertaUjianIdKerjakanRoute =
   AuthenticatedPesertaUjianIdKerjakanRouteImport.update({
     id: '/kerjakan',
@@ -268,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/peserta': typeof AuthenticatedPesertaRouteWithChildren
+  '/admin/akademik': typeof AuthenticatedAdminAkademikRouteWithChildren
   '/admin/evaluasi': typeof AuthenticatedAdminEvaluasiRouteWithChildren
   '/admin/files': typeof AuthenticatedAdminFilesRoute
   '/admin/hasil': typeof AuthenticatedAdminHasilRouteWithChildren
@@ -281,6 +338,12 @@ export interface FileRoutesByFullPath {
   '/api/files/$id': typeof ApiFilesIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/peserta/': typeof AuthenticatedPesertaIndexRoute
+  '/admin/akademik/fakultas': typeof AuthenticatedAdminAkademikFakultasRoute
+  '/admin/akademik/jurusan': typeof AuthenticatedAdminAkademikJurusanRoute
+  '/admin/akademik/mata-kuliah': typeof AuthenticatedAdminAkademikMataKuliahRoute
+  '/admin/akademik/prodi': typeof AuthenticatedAdminAkademikProdiRoute
+  '/admin/akademik/semester': typeof AuthenticatedAdminAkademikSemesterRoute
+  '/admin/akademik/tahun-akademik': typeof AuthenticatedAdminAkademikTahunAkademikRoute
   '/admin/evaluasi/$id': typeof AuthenticatedAdminEvaluasiIdRoute
   '/admin/hasil/$id': typeof AuthenticatedAdminHasilIdRoute
   '/admin/laporan/analisis': typeof AuthenticatedAdminLaporanAnalisisRoute
@@ -294,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/admin/ujian/$id': typeof AuthenticatedAdminUjianIdRouteWithChildren
   '/admin/users/roles': typeof AuthenticatedAdminUsersRolesRoute
   '/peserta/ujian/$id': typeof AuthenticatedPesertaUjianIdRouteWithChildren
+  '/admin/akademik/': typeof AuthenticatedAdminAkademikIndexRoute
   '/admin/leaderboard/': typeof AuthenticatedAdminLeaderboardIndexRoute
   '/admin/modul/$id/topik': typeof AuthenticatedAdminModulIdTopikRoute
   '/admin/topik/$id/soal': typeof AuthenticatedAdminTopikIdSoalRoute
@@ -318,6 +382,12 @@ export interface FileRoutesByTo {
   '/api/files/$id': typeof ApiFilesIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/peserta': typeof AuthenticatedPesertaIndexRoute
+  '/admin/akademik/fakultas': typeof AuthenticatedAdminAkademikFakultasRoute
+  '/admin/akademik/jurusan': typeof AuthenticatedAdminAkademikJurusanRoute
+  '/admin/akademik/mata-kuliah': typeof AuthenticatedAdminAkademikMataKuliahRoute
+  '/admin/akademik/prodi': typeof AuthenticatedAdminAkademikProdiRoute
+  '/admin/akademik/semester': typeof AuthenticatedAdminAkademikSemesterRoute
+  '/admin/akademik/tahun-akademik': typeof AuthenticatedAdminAkademikTahunAkademikRoute
   '/admin/evaluasi/$id': typeof AuthenticatedAdminEvaluasiIdRoute
   '/admin/hasil/$id': typeof AuthenticatedAdminHasilIdRoute
   '/admin/laporan/analisis': typeof AuthenticatedAdminLaporanAnalisisRoute
@@ -331,6 +401,7 @@ export interface FileRoutesByTo {
   '/admin/ujian/$id': typeof AuthenticatedAdminUjianIdRouteWithChildren
   '/admin/users/roles': typeof AuthenticatedAdminUsersRolesRoute
   '/peserta/ujian/$id': typeof AuthenticatedPesertaUjianIdRouteWithChildren
+  '/admin/akademik': typeof AuthenticatedAdminAkademikIndexRoute
   '/admin/leaderboard': typeof AuthenticatedAdminLeaderboardIndexRoute
   '/admin/modul/$id/topik': typeof AuthenticatedAdminModulIdTopikRoute
   '/admin/topik/$id/soal': typeof AuthenticatedAdminTopikIdSoalRoute
@@ -346,6 +417,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/peserta': typeof AuthenticatedPesertaRouteWithChildren
+  '/_authenticated/admin/akademik': typeof AuthenticatedAdminAkademikRouteWithChildren
   '/_authenticated/admin/evaluasi': typeof AuthenticatedAdminEvaluasiRouteWithChildren
   '/_authenticated/admin/files': typeof AuthenticatedAdminFilesRoute
   '/_authenticated/admin/hasil': typeof AuthenticatedAdminHasilRouteWithChildren
@@ -359,6 +431,12 @@ export interface FileRoutesById {
   '/api/files/$id': typeof ApiFilesIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/peserta/': typeof AuthenticatedPesertaIndexRoute
+  '/_authenticated/admin/akademik/fakultas': typeof AuthenticatedAdminAkademikFakultasRoute
+  '/_authenticated/admin/akademik/jurusan': typeof AuthenticatedAdminAkademikJurusanRoute
+  '/_authenticated/admin/akademik/mata-kuliah': typeof AuthenticatedAdminAkademikMataKuliahRoute
+  '/_authenticated/admin/akademik/prodi': typeof AuthenticatedAdminAkademikProdiRoute
+  '/_authenticated/admin/akademik/semester': typeof AuthenticatedAdminAkademikSemesterRoute
+  '/_authenticated/admin/akademik/tahun-akademik': typeof AuthenticatedAdminAkademikTahunAkademikRoute
   '/_authenticated/admin/evaluasi/$id': typeof AuthenticatedAdminEvaluasiIdRoute
   '/_authenticated/admin/hasil/$id': typeof AuthenticatedAdminHasilIdRoute
   '/_authenticated/admin/laporan/analisis': typeof AuthenticatedAdminLaporanAnalisisRoute
@@ -372,6 +450,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/ujian/$id': typeof AuthenticatedAdminUjianIdRouteWithChildren
   '/_authenticated/admin/users/roles': typeof AuthenticatedAdminUsersRolesRoute
   '/_authenticated/peserta/ujian/$id': typeof AuthenticatedPesertaUjianIdRouteWithChildren
+  '/_authenticated/admin/akademik/': typeof AuthenticatedAdminAkademikIndexRoute
   '/_authenticated/admin/leaderboard/': typeof AuthenticatedAdminLeaderboardIndexRoute
   '/_authenticated/admin/modul/$id/topik': typeof AuthenticatedAdminModulIdTopikRoute
   '/_authenticated/admin/topik/$id/soal': typeof AuthenticatedAdminTopikIdSoalRoute
@@ -387,6 +466,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin'
     | '/peserta'
+    | '/admin/akademik'
     | '/admin/evaluasi'
     | '/admin/files'
     | '/admin/hasil'
@@ -400,6 +480,12 @@ export interface FileRouteTypes {
     | '/api/files/$id'
     | '/admin/'
     | '/peserta/'
+    | '/admin/akademik/fakultas'
+    | '/admin/akademik/jurusan'
+    | '/admin/akademik/mata-kuliah'
+    | '/admin/akademik/prodi'
+    | '/admin/akademik/semester'
+    | '/admin/akademik/tahun-akademik'
     | '/admin/evaluasi/$id'
     | '/admin/hasil/$id'
     | '/admin/laporan/analisis'
@@ -413,6 +499,7 @@ export interface FileRouteTypes {
     | '/admin/ujian/$id'
     | '/admin/users/roles'
     | '/peserta/ujian/$id'
+    | '/admin/akademik/'
     | '/admin/leaderboard/'
     | '/admin/modul/$id/topik'
     | '/admin/topik/$id/soal'
@@ -437,6 +524,12 @@ export interface FileRouteTypes {
     | '/api/files/$id'
     | '/admin'
     | '/peserta'
+    | '/admin/akademik/fakultas'
+    | '/admin/akademik/jurusan'
+    | '/admin/akademik/mata-kuliah'
+    | '/admin/akademik/prodi'
+    | '/admin/akademik/semester'
+    | '/admin/akademik/tahun-akademik'
     | '/admin/evaluasi/$id'
     | '/admin/hasil/$id'
     | '/admin/laporan/analisis'
@@ -450,6 +543,7 @@ export interface FileRouteTypes {
     | '/admin/ujian/$id'
     | '/admin/users/roles'
     | '/peserta/ujian/$id'
+    | '/admin/akademik'
     | '/admin/leaderboard'
     | '/admin/modul/$id/topik'
     | '/admin/topik/$id/soal'
@@ -464,6 +558,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/admin'
     | '/_authenticated/peserta'
+    | '/_authenticated/admin/akademik'
     | '/_authenticated/admin/evaluasi'
     | '/_authenticated/admin/files'
     | '/_authenticated/admin/hasil'
@@ -477,6 +572,12 @@ export interface FileRouteTypes {
     | '/api/files/$id'
     | '/_authenticated/admin/'
     | '/_authenticated/peserta/'
+    | '/_authenticated/admin/akademik/fakultas'
+    | '/_authenticated/admin/akademik/jurusan'
+    | '/_authenticated/admin/akademik/mata-kuliah'
+    | '/_authenticated/admin/akademik/prodi'
+    | '/_authenticated/admin/akademik/semester'
+    | '/_authenticated/admin/akademik/tahun-akademik'
     | '/_authenticated/admin/evaluasi/$id'
     | '/_authenticated/admin/hasil/$id'
     | '/_authenticated/admin/laporan/analisis'
@@ -490,6 +591,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/ujian/$id'
     | '/_authenticated/admin/users/roles'
     | '/_authenticated/peserta/ujian/$id'
+    | '/_authenticated/admin/akademik/'
     | '/_authenticated/admin/leaderboard/'
     | '/_authenticated/admin/modul/$id/topik'
     | '/_authenticated/admin/topik/$id/soal'
@@ -634,12 +736,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEvaluasiRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/akademik': {
+      id: '/_authenticated/admin/akademik'
+      path: '/akademik'
+      fullPath: '/admin/akademik'
+      preLoaderRoute: typeof AuthenticatedAdminAkademikRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/leaderboard/': {
       id: '/_authenticated/admin/leaderboard/'
       path: '/leaderboard'
       fullPath: '/admin/leaderboard/'
       preLoaderRoute: typeof AuthenticatedAdminLeaderboardIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/akademik/': {
+      id: '/_authenticated/admin/akademik/'
+      path: '/'
+      fullPath: '/admin/akademik/'
+      preLoaderRoute: typeof AuthenticatedAdminAkademikIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminAkademikRoute
     }
     '/_authenticated/peserta/ujian/$id': {
       id: '/_authenticated/peserta/ujian/$id'
@@ -732,6 +848,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminEvaluasiIdRouteImport
       parentRoute: typeof AuthenticatedAdminEvaluasiRoute
     }
+    '/_authenticated/admin/akademik/tahun-akademik': {
+      id: '/_authenticated/admin/akademik/tahun-akademik'
+      path: '/tahun-akademik'
+      fullPath: '/admin/akademik/tahun-akademik'
+      preLoaderRoute: typeof AuthenticatedAdminAkademikTahunAkademikRouteImport
+      parentRoute: typeof AuthenticatedAdminAkademikRoute
+    }
+    '/_authenticated/admin/akademik/semester': {
+      id: '/_authenticated/admin/akademik/semester'
+      path: '/semester'
+      fullPath: '/admin/akademik/semester'
+      preLoaderRoute: typeof AuthenticatedAdminAkademikSemesterRouteImport
+      parentRoute: typeof AuthenticatedAdminAkademikRoute
+    }
+    '/_authenticated/admin/akademik/prodi': {
+      id: '/_authenticated/admin/akademik/prodi'
+      path: '/prodi'
+      fullPath: '/admin/akademik/prodi'
+      preLoaderRoute: typeof AuthenticatedAdminAkademikProdiRouteImport
+      parentRoute: typeof AuthenticatedAdminAkademikRoute
+    }
+    '/_authenticated/admin/akademik/mata-kuliah': {
+      id: '/_authenticated/admin/akademik/mata-kuliah'
+      path: '/mata-kuliah'
+      fullPath: '/admin/akademik/mata-kuliah'
+      preLoaderRoute: typeof AuthenticatedAdminAkademikMataKuliahRouteImport
+      parentRoute: typeof AuthenticatedAdminAkademikRoute
+    }
+    '/_authenticated/admin/akademik/jurusan': {
+      id: '/_authenticated/admin/akademik/jurusan'
+      path: '/jurusan'
+      fullPath: '/admin/akademik/jurusan'
+      preLoaderRoute: typeof AuthenticatedAdminAkademikJurusanRouteImport
+      parentRoute: typeof AuthenticatedAdminAkademikRoute
+    }
+    '/_authenticated/admin/akademik/fakultas': {
+      id: '/_authenticated/admin/akademik/fakultas'
+      path: '/fakultas'
+      fullPath: '/admin/akademik/fakultas'
+      preLoaderRoute: typeof AuthenticatedAdminAkademikFakultasRouteImport
+      parentRoute: typeof AuthenticatedAdminAkademikRoute
+    }
     '/_authenticated/peserta/ujian/$id/kerjakan': {
       id: '/_authenticated/peserta/ujian/$id/kerjakan'
       path: '/kerjakan'
@@ -776,6 +934,37 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedAdminAkademikRouteChildren {
+  AuthenticatedAdminAkademikFakultasRoute: typeof AuthenticatedAdminAkademikFakultasRoute
+  AuthenticatedAdminAkademikJurusanRoute: typeof AuthenticatedAdminAkademikJurusanRoute
+  AuthenticatedAdminAkademikMataKuliahRoute: typeof AuthenticatedAdminAkademikMataKuliahRoute
+  AuthenticatedAdminAkademikProdiRoute: typeof AuthenticatedAdminAkademikProdiRoute
+  AuthenticatedAdminAkademikSemesterRoute: typeof AuthenticatedAdminAkademikSemesterRoute
+  AuthenticatedAdminAkademikTahunAkademikRoute: typeof AuthenticatedAdminAkademikTahunAkademikRoute
+  AuthenticatedAdminAkademikIndexRoute: typeof AuthenticatedAdminAkademikIndexRoute
+}
+
+const AuthenticatedAdminAkademikRouteChildren: AuthenticatedAdminAkademikRouteChildren =
+  {
+    AuthenticatedAdminAkademikFakultasRoute:
+      AuthenticatedAdminAkademikFakultasRoute,
+    AuthenticatedAdminAkademikJurusanRoute:
+      AuthenticatedAdminAkademikJurusanRoute,
+    AuthenticatedAdminAkademikMataKuliahRoute:
+      AuthenticatedAdminAkademikMataKuliahRoute,
+    AuthenticatedAdminAkademikProdiRoute: AuthenticatedAdminAkademikProdiRoute,
+    AuthenticatedAdminAkademikSemesterRoute:
+      AuthenticatedAdminAkademikSemesterRoute,
+    AuthenticatedAdminAkademikTahunAkademikRoute:
+      AuthenticatedAdminAkademikTahunAkademikRoute,
+    AuthenticatedAdminAkademikIndexRoute: AuthenticatedAdminAkademikIndexRoute,
+  }
+
+const AuthenticatedAdminAkademikRouteWithChildren =
+  AuthenticatedAdminAkademikRoute._addFileChildren(
+    AuthenticatedAdminAkademikRouteChildren,
+  )
 
 interface AuthenticatedAdminEvaluasiRouteChildren {
   AuthenticatedAdminEvaluasiIdRoute: typeof AuthenticatedAdminEvaluasiIdRoute
@@ -905,6 +1094,7 @@ const AuthenticatedAdminUsersRouteWithChildren =
   )
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAkademikRoute: typeof AuthenticatedAdminAkademikRouteWithChildren
   AuthenticatedAdminEvaluasiRoute: typeof AuthenticatedAdminEvaluasiRouteWithChildren
   AuthenticatedAdminFilesRoute: typeof AuthenticatedAdminFilesRoute
   AuthenticatedAdminHasilRoute: typeof AuthenticatedAdminHasilRouteWithChildren
@@ -922,6 +1112,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAkademikRoute: AuthenticatedAdminAkademikRouteWithChildren,
   AuthenticatedAdminEvaluasiRoute: AuthenticatedAdminEvaluasiRouteWithChildren,
   AuthenticatedAdminFilesRoute: AuthenticatedAdminFilesRoute,
   AuthenticatedAdminHasilRoute: AuthenticatedAdminHasilRouteWithChildren,
