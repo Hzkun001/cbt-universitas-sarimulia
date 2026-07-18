@@ -51,8 +51,8 @@ function HasilUjian() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 animate-in fade-in duration-500 pb-12 pt-4">
-      <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 rounded-xl border shadow-sm">
-        <Link to="/admin/analitik" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 w-fit mb-3">
+      <div className="bg-white dark:bg-slate-950 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <Link to="/admin/analitik" className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition-colors flex items-center gap-1 w-fit mb-4">
           ← Kembali ke Pilihan Ujian
         </Link>
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -423,12 +423,12 @@ function AiInsightTab({ ujian, sesis }: { ujian: Ujian, sesis: SesiUjian[] }) {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-indigo-100 dark:border-indigo-900/50 shadow-sm">
+      <Card className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-sm">
         <CardContent className="p-8 text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center shadow-sm mb-4">
-            <Sparkles className="h-8 w-8 text-indigo-500" />
+          <div className="mx-auto w-12 h-12 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center mb-2">
+            <Sparkles className="h-6 w-6 text-slate-700 dark:text-slate-300" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Analisis AI & Rekomendasi</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Wawasan Otomatis</h2>
           <p className="text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
             Gunakan kecerdasan buatan untuk membaca tren, mendeteksi soal paling sulit, dan mendapatkan rekomendasi tindak lanjut bagi dosen secara instan.
           </p>
