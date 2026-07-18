@@ -1,3 +1,5 @@
+import crypto from "crypto";
+
 const DEFAULT_ROLE_ACCESS = {
   admin_prodi: [
     "dashboard",
@@ -137,10 +139,15 @@ export async function createSeedDataset({ uid, now, hashPassword }) {
     { id: uid("g_"), nama: "Bisnis Digital", keterangan: `${schoolName} · Program Studi Bisnis Digital` },
   ];
 
+  const adminPassword = process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === "production" ? crypto.randomBytes(8).toString("hex") : "admin123");
+  if (process.env.NODE_ENV === "production" && !process.env.ADMIN_PASSWORD) {
+    console.warn(`[WARNING] No ADMIN_PASSWORD provided in production! Generated random password for super_admin: ${adminPassword}`);
+  }
+
   const admin = {
     id: uid("u_"),
     username: "admin",
-    passwordHash: await hashPassword("admin123"),
+    passwordHash: await hashPassword(adminPassword),
     namaLengkap: "Rahmawati Kusuma, M.Pd",
     role: "super_admin",
     allowedTopikIds: [],
@@ -360,6 +367,33 @@ export async function createSeedDataset({ uid, now, hashPassword }) {
     },
   ];
 
+  for (let i = 1; i <= 20; i++) {
+    ujian.push({
+      id: uid("ex_"),
+      nama: `Ujian Simulasi ${i} - Tes Kemampuan Dasar`,
+      deskripsi: `<p>Ujian simulasi otomatis ke-${i} untuk pengujian performa tabel dan pagination.</p>`,
+      durasiMenit: 60,
+      poinBenar: 10,
+      poinSalah: 0,
+      poinKosong: 0,
+      beginAt: ts - parseDurationMinutes(300 + (i * 5)),
+      endAt: ts + parseDurationMinutes(1440 + (i * 10)),
+      tokenAktif: true,
+      ipRange: "",
+      groupIds: [groups[0].id, groups[1].id, groups[2].id, groups[3].id],
+      topicSets: [
+        { id: uid("ts_"), topikId: topik[0].id, jumlah: 1, jumlahOpsi: 4, acakSoal: true, acakJawaban: true },
+      ],
+      showResult: true,
+      showResultDetail: false,
+      fullscreenWajib: false,
+      maxPindahTab: 5,
+      blokirShortcut: false,
+      createdBy: admin.id,
+      createdAt: ts + 302 + i,
+    });
+  }
+
   const token = [
     { id: uid("tk_"), ujianId: ujian[0].id, kode: "UAS-WEB-01", dipakaiOleh: peserta[0].id, dipakaiAt: ts - parseDurationMinutes(70) },
     { id: uid("tk_"), ujianId: ujian[0].id, kode: "UAS-WEB-02" },
@@ -513,7 +547,7 @@ export async function createSeedDataset({ uid, now, hashPassword }) {
   );
 
   const config = {
-    appName: "CBT-MAN Demo Kampus",
+    appName: "CBT-Kampus",
     appDeskripsi: "Simulasi CBT Kampus dengan data dummy realistis untuk preview lokal.",
     pesanLogin: "Selamat datang di portal ujian Universitas Teknologi Nusantara. Gunakan akun demo sesuai peran untuk mencoba alur sistem.",
     mobileLock: false,
@@ -537,6 +571,7 @@ export async function seedDatabase({ prisma, dataset, stringifyJson }) {
   await prisma.appConfig.deleteMany();
 
   await prisma.group.createMany({ data: dataset.groups });
+  // ponytail: Seed script isn't transactional because it's a one-time setup. If it fails, wipe DB and retry. Upgrade path: Use prisma.$transaction for production data migrations.
   await prisma.user.createMany({
     data: dataset.users.map((item) => ({
       ...item,

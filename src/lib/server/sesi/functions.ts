@@ -100,6 +100,18 @@ export const mutateSesiServer = createServerFn({ method: "POST" })
 						}
 					}
 				}
+
+				if (!existing) {
+					const ujianData = await prisma.ujian.findUnique({ where: { id: item.ujianId }, select: { tokenAktif: true } });
+					if (ujianData?.tokenAktif) {
+						const claimed = await prisma.tokenUjian.findFirst({
+							where: { ujianId: item.ujianId, dipakaiOleh: caller.id },
+						});
+						if (!claimed) {
+							return { ok: false as const, error: "Akses ditolak: Anda belum mengklaim token untuk ujian ini." };
+						}
+					}
+				}
 			} else if (caller.role !== "super_admin") {
 				return { ok: false as const, error: "Forbidden" };
 			}
@@ -127,43 +139,42 @@ export const mutateSesiServer = createServerFn({ method: "POST" })
 					});
 				} else {
 					const item = payload as SesiUjian;
+					let updateData: any = {
+						ujianId: item.ujianId,
+						pesertaId: item.pesertaId,
+						status: item.status,
+						mulaiAt: toBigInt(item.mulaiAt),
+						selesaiAt: toBigInt(item.selesaiAt),
+						endsAt: toBigInt(item.endsAt),
+						soalIds: stringifyJson(item.soalIds),
+						jawabanOrder: stringifyJson(item.jawabanOrder),
+						jawaban: stringifyJson(item.jawaban),
+						pelanggaran: item.pelanggaran,
+						skorTotal: item.skorTotal ?? null,
+						maxSkor: item.maxSkor ?? null,
+						gradedAt: toBigInt(item.gradedAt),
+						gradedBy: item.gradedBy ?? null,
+						createdAt: BigInt(item.createdAt),
+					};
+					let createData: any = { ...updateData, id: item.id };
+
+					if (caller.role === "mahasiswa") {
+						updateData = {
+							status: item.status,
+							selesaiAt: toBigInt(item.selesaiAt),
+							jawaban: stringifyJson(item.jawaban),
+							pelanggaran: item.pelanggaran,
+						};
+						createData.skorTotal = null;
+						createData.maxSkor = null;
+						createData.gradedAt = null;
+						createData.gradedBy = null;
+					}
+
 					await tx.sesiUjian.upsert({
 						where: { id: item.id },
-						update: {
-							ujianId: item.ujianId,
-							pesertaId: item.pesertaId,
-							status: item.status,
-							mulaiAt: toBigInt(item.mulaiAt),
-							selesaiAt: toBigInt(item.selesaiAt),
-							endsAt: toBigInt(item.endsAt),
-							soalIds: stringifyJson(item.soalIds),
-							jawabanOrder: stringifyJson(item.jawabanOrder),
-							jawaban: stringifyJson(item.jawaban),
-							pelanggaran: item.pelanggaran,
-							skorTotal: item.skorTotal ?? null,
-							maxSkor: item.maxSkor ?? null,
-							gradedAt: toBigInt(item.gradedAt),
-							gradedBy: item.gradedBy ?? null,
-							createdAt: BigInt(item.createdAt),
-						},
-						create: {
-							id: item.id,
-							ujianId: item.ujianId,
-							pesertaId: item.pesertaId,
-							status: item.status,
-							mulaiAt: toBigInt(item.mulaiAt),
-							selesaiAt: toBigInt(item.selesaiAt),
-							endsAt: toBigInt(item.endsAt),
-							soalIds: stringifyJson(item.soalIds),
-							jawabanOrder: stringifyJson(item.jawabanOrder),
-							jawaban: stringifyJson(item.jawaban),
-							pelanggaran: item.pelanggaran,
-							skorTotal: item.skorTotal ?? null,
-							maxSkor: item.maxSkor ?? null,
-							gradedAt: toBigInt(item.gradedAt),
-							gradedBy: item.gradedBy ?? null,
-							createdAt: BigInt(item.createdAt),
-						},
+						update: updateData,
+						create: createData,
 					});
 				}
 			});

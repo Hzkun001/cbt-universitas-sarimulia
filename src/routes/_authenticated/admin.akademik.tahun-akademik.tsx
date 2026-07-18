@@ -73,56 +73,48 @@ function TahunAkademikPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-medium">Daftar Tahun Akademik</h2>
-        <Button onClick={handleAdd} size="sm">
-          <Plus className="mr-1 h-4 w-4" /> Tambah
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Daftar Tahun Akademik</h2>
+          <p className="text-sm text-slate-500">Kelola periode waktu perkuliahan institusi.</p>
+        </div>
+        <Button onClick={handleAdd} size="sm" className="h-9 font-semibold shadow-sm">
+          <Plus className="mr-2 h-4 w-4" /> Tambah Tahun Akademik
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/40 text-left">
-              <tr>
-                <th className="p-3">Tahun Akademik</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id} className="border-b last:border-0">
-                  <td className="p-3 font-medium">{item.nama}</td>
-                  <td className="p-3">
-                    {item.aktif ? (
-                      <Badge className="bg-green-500 hover:bg-green-600">Aktif</Badge>
-                    ) : (
-                      <Badge variant="secondary">Tidak Aktif</Badge>
-                    )}
-                  </td>
-                  <td className="p-3 text-right space-x-2">
-                    <Button size="sm" variant="ghost" onClick={() => handleEdit(item)}>
-                      <Pencil className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleRemove(item.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {items.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="p-6 text-center text-muted-foreground">
-                    Belum ada data tahun akademik.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 overflow-hidden">
+        <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
+          {items.map((item) => (
+            <div key={item.id} className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-white dark:hover:bg-slate-800/50 transition-colors gap-2">
+              <div className="flex items-center gap-3">
+                <div className="font-medium text-slate-900 dark:text-slate-100">{item.nama}</div>
+                {item.aktif ? (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-[10px] font-semibold tracking-wide uppercase text-emerald-700 dark:text-emerald-400">
+                    Aktif
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-semibold tracking-wide uppercase text-slate-500">
+                    Tidak Aktif
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-slate-900 dark:hover:text-white" onClick={() => handleEdit(item)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950" onClick={() => handleRemove(item.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+          {items.length === 0 && (
+            <div className="p-8 text-center text-sm text-slate-400">Belum ada data tahun akademik.</div>
+          )}
+        </div>
+      </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

@@ -46,6 +46,7 @@ export const mutateModulServer = createServerFn({ method: "POST" })
 			if (caller.role === "admin_prodi") {
 				if (!(await operatorHasNav(caller, "modul")))
 					return { ok: false as const, error: "Forbidden" };
+				if (action === "bulkSet") return { ok: false as const, error: "Forbidden" };
 				if (action === "remove") {
 					const id = String((payload as { id?: string }).id ?? "");
 					if (!(await operatorCanTouchModul(caller, id))) return { ok: false as const, error: "Forbidden" };
@@ -98,6 +99,7 @@ export const mutateTopikServer = createServerFn({ method: "POST" })
 			if (caller.role === "admin_prodi") {
 				if (!(await operatorHasNav(caller, "modul")))
 					return { ok: false as const, error: "Forbidden" };
+				if (action === "bulkSet") return { ok: false as const, error: "Forbidden" };
 				if (allowedTopikIdsForCaller(caller) !== null) return { ok: false as const, error: "Forbidden" };
 			} else if (caller.role !== "super_admin") {
 				return { ok: false as const, error: "Forbidden" };
@@ -145,6 +147,7 @@ export const mutateSoalServer = createServerFn({ method: "POST" })
 			if (caller.role === "admin_prodi") {
 				if (!(await operatorHasNav(caller, "modul")))
 					return { ok: false as const, error: "Forbidden" };
+				if (action === "bulkSet") return { ok: false as const, error: "Forbidden" };
 				if (action === "remove") {
 					const id = String((payload as { id?: string }).id ?? "");
 					if (!(await operatorCanTouchSoal(caller, id))) return { ok: false as const, error: "Forbidden" };

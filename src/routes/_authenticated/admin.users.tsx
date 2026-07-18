@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Pencil, Trash2, Plus, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { AdminPage, AdminPageHeader, AdminPageContent } from "@/components/cbt/AdminPage";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
   component: UsersPage,
@@ -33,113 +34,136 @@ function UsersPage() {
   const [users, setUsers] = useState<User[]>(usersRepo.all().filter((u) => u.role !== "mahasiswa"));
   const [editing, setEditing] = useState<User | null>(null);
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filterRole, setFilterRole] = useState("all");
 
   function refresh() {
     setUsers(usersRepo.all().filter((u) => u.role !== "mahasiswa"));
   }
 
+  const shown = users.filter((u) => 
+    (filterRole === "all" || u.role === filterRole) &&
+    (query === "" || u.namaLengkap.toLowerCase().includes(query.toLowerCase()) || u.username.toLowerCase().includes(query.toLowerCase()))
+  );
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Pengguna</h1>
-          <p className="text-sm text-muted-foreground">Kelola akun admin & operator.</p>
-        </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setOpen(true);
-          }}
-        >
-          <Plus className="mr-1 h-4 w-4" /> Tambah
-        </Button>
+    <AdminPage>
+      <AdminPageHeader
+        title="Pengguna Sistem"
+        description="Kelola akses akun admin, operator prodi, dan evaluator."
+        action={
+          <Button onClick={() => { setEditing(null); setOpen(true); }} className="h-9">
+            <Plus className="mr-2 h-4 w-4" /> Tambah Akun
+          </Button>
+        }
+      />
+
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Input 
+          placeholder="Cari nama atau username..." 
+          value={query} 
+          onChange={(e) => setQuery(e.target.value)} 
+          className="max-w-xs" 
+        />
+        <Select value={filterRole} onValueChange={setFilterRole}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Semua Peran" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Peran</SelectItem>
+            <SelectItem value="super_admin">Super Admin</SelectItem>
+            <SelectItem value="admin_prodi">Admin Prodi</SelectItem>
+            <SelectItem value="evaluator">Evaluator</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/40 text-left">
-              <tr>
-                <th className="p-3">Username</th>
-                <th className="p-3">Nama</th>
-                <th className="p-3">Role</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-b last:border-0">
-                  <td className="p-3 font-mono text-xs">{u.username}</td>
-                  <td className="p-3">{u.namaLengkap}</td>
-                  <td className="p-3">
-                    <span className="rounded bg-accent px-2 py-0.5 text-xs">
+      {/* List Section */}
+      <AdminPageContent>
+        <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+          {shown.map((u) => (
+            <div key={u.id} className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:px-6 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors gap-4">
+              
+              {/* User Info */}
+              <div className="flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold uppercase shrink-0">
+                  {u.namaLengkap.charAt(0)}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{u.namaLengkap}</h3>
+                    <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-semibold tracking-wide uppercase text-slate-500">
                       {u.role === "super_admin" ? "Super Admin" : u.role === "admin_prodi" ? "Admin Prodi" : u.role === "evaluator" ? "Evaluator" : u.role}
                     </span>
-                  </td>
-                  <td className="p-3">{u.aktif ? "Aktif" : "Nonaktif"}</td>
-                  <td className="p-3 text-right">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setEditing(u);
-                        setOpen(true);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        if (!confirm("Hapus pengguna ini?")) return;
-                        usersRepo.remove(u.id);
-                        refresh();
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      title="Hentikan semua sesi aktif pengguna ini"
-                      onClick={async () => {
-                        if (
-                          !confirm(
-                            `Hentikan semua sesi aktif untuk ${u.username}? Mereka akan keluar paksa pada aktivitas berikutnya.`,
-                          )
-                        ) {
-                          return;
-                        }
-                        try {
-                          const res = await revokeUserSessionsServer({ data: { userId: u.id } });
-                          if (res.ok) toast.success(`${res.deleted} sesi dihentikan untuk ${u.username}`);
-                          else toast.error(res.error ?? "Gagal menghentikan sesi");
-                        } catch {
-                          toast.error("Gagal menghentikan sesi");
-                        }
-                      }}
-                    >
-                      <LogOut className="h-4 w-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {users.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-6 text-center text-muted-foreground">
-                    Belum ada pengguna.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+                    {!u.aktif && (
+                      <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-[10px] font-semibold tracking-wide uppercase text-red-600 dark:text-red-400">
+                        Nonaktif
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs font-mono text-slate-500 mt-0.5 truncate">{u.username}</p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  onClick={() => {
+                    setEditing(u);
+                    setOpen(true);
+                  }}
+                  title="Edit"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                  title="Hapus"
+                  onClick={() => {
+                    if (!confirm("Hapus pengguna ini?")) return;
+                    usersRepo.remove(u.id);
+                    refresh();
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950"
+                  title="Hentikan semua sesi aktif"
+                  onClick={async () => {
+                    if (!confirm("Hentikan semua sesi aktif pengguna ini? (Force logout)")) return;
+                    try {
+                      const res = await revokeUserSessionsServer({ data: { userId: u.id } });
+                      if (res.ok) toast.success("Sesi berhasil dihentikan. Pengguna akan ter-logout.");
+                      else toast.error(res.error ?? "Gagal menghentikan sesi");
+                    } catch {
+                      toast.error("Gagal menghentikan sesi");
+                    }
+                  }}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+          {shown.length === 0 && (
+            <div className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              Tidak ada data pengguna yang sesuai.
+            </div>
+          )}
+        </div>
+      </AdminPageContent>
 
       <UserDialog open={open} onOpenChange={setOpen} editing={editing} onSaved={refresh} />
-    </div>
+    </AdminPage>
   );
 }
 

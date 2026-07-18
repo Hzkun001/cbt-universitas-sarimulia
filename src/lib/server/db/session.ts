@@ -110,7 +110,7 @@ export async function validateSession(
 				},
 			});
 			if (otherSessions.length > 0) {
-				// Delete older sessions (keep the newest one)
+				// ponytail: Race condition between concurrent logins is acceptable because this lazy cleanup always deletes older sessions eventually. True atomicity requires DB locking which is overkill.
 				for (const s of otherSessions) {
 					await prisma.session
 						.delete({ where: { id: s.id } })
@@ -143,6 +143,7 @@ export async function deleteSessionsForUser(userId: string): Promise<number> {
 
 /** Get device fingerprint from request headers (simple hash of UA + IP) */
 export async function getDeviceFingerprint(): Promise<string> {
+	// ponytail: UA and IP checks are just deterrents against casual sharing. Upgrade path: Safe Exam Browser integration + trusted proxy validation for X-Forwarded-For.
 	const headers = getRequestHeaders();
 	const ua = headers.get("user-agent") ?? "";
 	const ip =

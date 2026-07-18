@@ -23,7 +23,7 @@ export async function writeAuditLog(entry: AuditLogEntry): Promise<void> {
 				action: entry.action,
 				entity: entry.entity,
 				entityId: entry.entityId ?? null,
-				details: entry.details ?? null,
+				details: entry.details?.replace(/"password(Hash)?":"[^"]*"/g, '"password$1":"[REDACTED]"') ?? null,
 			},
 		});
 	} catch {

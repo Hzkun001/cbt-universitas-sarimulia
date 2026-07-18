@@ -16,7 +16,7 @@ import { exportSheet } from "@/lib/cbt/excel";
 import { useAuthStore } from "@/lib/cbt/auth-store";
 import { visibleUjians } from "@/lib/cbt/access";
 
-export const Route = createFileRoute("/_authenticated/admin/laporan/rekap")({
+export const Route = createFileRoute("/_authenticated/admin/analitik/rekap")({
   component: RekapPage,
 });
 
@@ -74,9 +74,9 @@ function RekapPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <div>
-        <Link to="/admin/laporan" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 w-fit mb-3">
-          ← Kembali ke Dasbor Laporan
+      <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 rounded-xl border shadow-sm">
+        <Link to="/admin/analitik" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 w-fit mb-3">
+          ← Kembali ke daftar analitik
         </Link>
         <h1 className="text-2xl font-bold tracking-tight">Rekap Hasil Ujian</h1>
         <p className="text-sm text-muted-foreground mt-1">Saring dan ekspor hasil ujian peserta ke dalam format Microsoft Excel.</p>

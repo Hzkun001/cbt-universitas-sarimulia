@@ -4,6 +4,7 @@ import { validateSessionServer } from "@/lib/server/auth/functions";
 import { loadPublicBootConfig } from "@/lib/cbt/repos";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
 	Table,
@@ -23,6 +24,7 @@ import {
 	Globe,
 	Monitor,
 	Sparkles,
+	Search,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LoginModal } from "@/components/LoginModal";
@@ -153,10 +155,12 @@ function Landing() {
 	});
 
 	const [appLogo, setAppLogo] = useState("");
+	const [appName, setAppName] = useState("CBT-Kampus");
 	
 	useEffect(() => {
 		loadPublicBootConfig().then(cfg => {
 			if (cfg.appLogo) setAppLogo(cfg.appLogo);
+			if (cfg.appName) setAppName(cfg.appName);
 		}).catch(() => undefined);
 	}, []);
 
@@ -169,6 +173,7 @@ function Landing() {
 	
 	const [timeOffset, setTimeOffset] = useState(0);
 	const [now, setNow] = useState(Date.now());
+	const [searchQuery, setSearchQuery] = useState("");
 	
 	useEffect(() => {
 		if (serverTime) {
@@ -262,34 +267,29 @@ function Landing() {
 		});
 	};
 
-	const currentExams = activeTab === "online" ? exams.online : exams.offline;
+	const rawCurrentExams = activeTab === "online" ? exams.online : exams.offline;
+	const currentExams = rawCurrentExams.filter((exam) => 
+		exam.nama.toLowerCase().includes(searchQuery.toLowerCase())
+	);
 
 	return (
-		<div className="min-h-screen relative flex flex-col bg-slate-50 dark:bg-[#030712] overflow-hidden z-0 transition-colors duration-500">
-			{/* Modern Premium Aurora/Mesh Background */}
+		<div className="min-h-screen relative flex flex-col bg-slate-50 dark:bg-[#030712] overflow-hidden z-0 transition-colors duration-300">
+			{/* Modern Premium Aurora/Mesh Background (Optimized for Performance) */}
 			<div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-				<div className="absolute -top-[40%] -left-[20%] w-[70%] h-[70%] rounded-full bg-gradient-to-br from-green-500/20 to-emerald-600/20 dark:from-green-600/20 dark:to-emerald-800/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-pulse" style={{ animationDuration: '10s' }} />
-				<div className="absolute top-[20%] -right-[20%] w-[60%] h-[60%] rounded-full bg-gradient-to-bl from-blue-400/20 to-cyan-300/20 dark:from-blue-700/20 dark:to-cyan-900/20 blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-pulse" style={{ animationDuration: '14s', animationDelay: '2s' }} />
-				<div className="absolute -bottom-[30%] left-[10%] w-[80%] h-[80%] rounded-full bg-gradient-to-tr from-yellow-500/20 to-amber-500/20 dark:from-yellow-700/20 dark:to-amber-900/20 blur-[150px] mix-blend-multiply dark:mix-blend-screen animate-pulse" style={{ animationDuration: '12s', animationDelay: '1s' }} />
+				<div className="absolute -top-[40%] -left-[20%] w-[70%] h-[70%] rounded-full bg-gradient-to-br from-green-500/20 to-emerald-600/20 dark:from-green-600/20 dark:to-emerald-800/20 blur-[120px]" />
+				<div className="absolute top-[20%] -right-[20%] w-[60%] h-[60%] rounded-full bg-gradient-to-bl from-blue-400/20 to-cyan-300/20 dark:from-blue-700/20 dark:to-cyan-900/20 blur-[100px]" />
+				<div className="absolute -bottom-[30%] left-[10%] w-[80%] h-[80%] rounded-full bg-gradient-to-tr from-yellow-500/20 to-amber-500/20 dark:from-yellow-700/20 dark:to-amber-900/20 blur-[150px]" />
 			</div>
 
-			{/* Grid Pattern overlay for tech texture */}
-			<div
-				className="absolute inset-0 z-0 pointer-events-none opacity-[0.15] dark:opacity-[0.07]"
-				style={{
-					backgroundImage:
-						"linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-					backgroundSize: "40px 40px",
-					maskImage:
-						"radial-gradient(ellipse 80% 80% at 50% 50%, #000 40%, transparent 100%)",
-					WebkitMaskImage:
-						"radial-gradient(ellipse 80% 80% at 50% 50%, #000 40%, transparent 100%)",
-				}}
-			/>
+
 
 			{/* Top Bar / Header */}
-			<header className="w-full bg-white/40 dark:bg-black/20 backdrop-blur-md px-6 py-4 flex items-center justify-between relative z-20 font-sans border-b border-slate-200/50 dark:border-white/5 shadow-sm transition-all">
-				<div className="flex items-center gap-3">
+			<header className="w-full bg-white/40 dark:bg-black/20 backdrop-blur-md px-6 py-4 flex items-center justify-between relative z-20 font-sans border-b border-slate-200/50 dark:border-white/5 shadow-sm transition-colors">
+				<Link 
+					to="/login-admin"
+					className="flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#03A559] rounded-lg transition-transform active:scale-95"
+					title="Masuk (Staf/Admin)"
+				>
 					{appLogo ? (
 						<img src={appLogo} alt="Logo" className="h-8 max-w-[120px] object-contain drop-shadow-sm" />
 					) : (
@@ -298,9 +298,9 @@ function Landing() {
 						</div>
 					)}
 					<span className="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">
-						CBT-Kampus
+						{appName}
 					</span>
-				</div>
+				</Link>
 				<div className="flex items-center gap-4">
 					<span className="font-mono text-sm sm:text-base font-bold text-slate-700 dark:text-slate-300 bg-slate-100/50 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-slate-200/50 dark:border-white/5 backdrop-blur-sm shadow-sm">
 						{timeString}
@@ -322,10 +322,10 @@ function Landing() {
 			</header>
 
 			{/* Main Content Area */}
-			<main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-12 relative z-10 w-full max-w-7xl mx-auto">
+			<main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:py-6 lg:px-12 relative z-10 w-full max-w-7xl mx-auto h-[calc(100vh-76px)]">
 				
 				{/* Glassmorphism Main Panel */}
-				<div className="w-full bg-white/60 dark:bg-[#0f172a]/60 backdrop-blur-3xl border border-white/40 dark:border-white/10 rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.6)] p-6 sm:p-8 lg:p-10 flex flex-col gap-8 relative z-10 transition-all duration-300 overflow-hidden">
+				<div className="w-full h-full max-h-[850px] bg-white/60 dark:bg-[#0f172a]/60 backdrop-blur-3xl border border-white/40 dark:border-white/10 rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.6)] p-6 sm:p-8 lg:py-6 lg:px-10 flex flex-col gap-4 sm:gap-6 relative z-10 transition-colors duration-300 overflow-hidden">
 					
 					{/* Inner glow effect for the card */}
 					<div className="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent dark:from-white/5 dark:to-transparent pointer-events-none rounded-3xl" />
@@ -350,38 +350,70 @@ function Landing() {
 						</span>
 					</div>
 
-					{/* Online/Offline Tabs */}
-					<div className="flex gap-2 relative z-10 bg-slate-200/50 dark:bg-black/20 p-1.5 rounded-xl border border-slate-300/50 dark:border-white/5 w-fit">
-						<button
-							className={`px-5 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 ${
-								activeTab === "online"
-									? "bg-white dark:bg-slate-800 text-[#03A559] dark:text-green-400 shadow-sm"
-									: "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-							}`}
-							onClick={() => setActiveTab("online")}
-						>
-							<span className="flex items-center gap-2">
+					{/* Tabs & Search */}
+					<div className="flex flex-col sm:flex-row justify-between gap-4 relative z-10">
+						{/* Online/Offline Tabs */}
+						<div className="relative grid grid-cols-2 bg-slate-200/50 dark:bg-black/20 p-1.5 rounded-xl border border-slate-300/50 dark:border-white/5 w-full sm:w-[320px]">
+							{/* Sliding Door Background */}
+							<div
+								className={cn(
+									"absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-6px)] bg-white dark:bg-slate-800 rounded-lg shadow-sm transition-transform duration-300 ease-out z-0",
+									activeTab === "online" ? "translate-x-0" : "translate-x-full"
+								)}
+							/>
+
+							<button
+								className={cn(
+									"relative z-10 flex items-center justify-center gap-2 px-2 py-2.5 text-sm font-bold rounded-lg transition-colors duration-300",
+									activeTab === "online"
+										? "text-[#03A559] dark:text-green-400"
+										: "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+								)}
+								onClick={() => setActiveTab("online")}
+							>
 								<Globe className="h-4 w-4" /> Online 
-								<span className="bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded-md text-xs">{exams.online.length}</span>
-							</span>
-						</button>
-						<button
-							className={`px-5 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 ${
-								activeTab === "offline"
-									? "bg-white dark:bg-slate-800 text-[#03A559] dark:text-green-400 shadow-sm"
-									: "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-							}`}
-							onClick={() => setActiveTab("offline")}
-						>
-							<span className="flex items-center gap-2">
+								<span className={cn(
+									"px-1.5 py-0.5 rounded-md text-xs transition-colors duration-300",
+									activeTab === "online" ? "bg-slate-100 dark:bg-slate-900" : "bg-white/50 dark:bg-black/10"
+								)}>
+									{exams.online.length}
+								</span>
+							</button>
+
+							<button
+								className={cn(
+									"relative z-10 flex items-center justify-center gap-2 px-2 py-2.5 text-sm font-bold rounded-lg transition-colors duration-300",
+									activeTab === "offline"
+										? "text-[#03A559] dark:text-green-400"
+										: "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+								)}
+								onClick={() => setActiveTab("offline")}
+							>
 								<Monitor className="h-4 w-4" /> Offline
-								<span className="bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded-md text-xs">{exams.offline.length}</span>
-							</span>
-						</button>
+								<span className={cn(
+									"px-1.5 py-0.5 rounded-md text-xs transition-colors duration-300",
+									activeTab === "offline" ? "bg-slate-100 dark:bg-slate-900" : "bg-white/50 dark:bg-black/10"
+								)}>
+									{exams.offline.length}
+								</span>
+							</button>
+						</div>
+
+						{/* Search Bar */}
+						<div className="relative w-full sm:max-w-xs h-[52px]">
+							<Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+							<input
+								type="text"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								placeholder="Cari nama ujian..."
+								className="w-full h-full pl-11 pr-4 rounded-xl border border-slate-200/50 dark:border-white/10 bg-white/50 dark:bg-black/20 focus:outline-none focus:ring-2 focus:ring-[#03A559]/50 dark:focus:ring-green-500/50 text-sm font-medium transition-all text-slate-700 dark:text-slate-200 placeholder:text-slate-400"
+							/>
+						</div>
 					</div>
 
-					{/* Table Section */}
-					<div className="border border-white/50 dark:border-white/10 rounded-2xl overflow-hidden bg-white/40 dark:bg-black/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md relative z-10">
+					{/* Table Section (Responsive Height) */}
+					<div className="border border-white/50 dark:border-white/10 rounded-2xl bg-white/40 dark:bg-black/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md relative z-10 overflow-y-auto overflow-x-auto max-h-[250px] custom-scrollbar">
 						<Table>
 							<TableHeader className="bg-white/60 dark:bg-white/5 border-b border-slate-200/50 dark:border-white/10">
 								<TableRow className="hover:bg-transparent border-none">
@@ -427,12 +459,12 @@ function Landing() {
 									currentExams.map((exam, index) => (
 										<TableRow
 											key={exam.id}
-											className="hover:bg-white/80 dark:hover:bg-white/10 transition-colors border-b border-slate-200/50 dark:border-white/5 group"
+											className="transition-colors border-b border-slate-200/50 dark:border-white/5 group"
 										>
 											<TableCell className="text-center font-bold text-slate-400 dark:text-slate-500 py-4">
 												{String(index + 1).padStart(2, '0')}
 											</TableCell>
-											<TableCell className="font-bold text-slate-800 dark:text-slate-100 py-4 group-hover:text-[#03A559] dark:group-hover:text-green-300 transition-colors">
+											<TableCell className="font-bold text-slate-800 dark:text-slate-100 py-4 transition-colors">
 												{exam.nama}
 											</TableCell>
 											<TableCell className="py-4">
@@ -509,10 +541,9 @@ function Landing() {
 					<div className="flex justify-center pt-2 relative z-10">
 						{activeTab === "online" ? (
 							<div className="relative group">
-								<div className="absolute -inset-1 bg-gradient-to-r from-[#03A559] to-emerald-600 rounded-2xl blur opacity-25 group-hover:opacity-60 transition duration-500"></div>
 								<button 
 									onClick={handleOpenLoginGeneral}
-									className="relative w-full sm:w-72 cursor-pointer font-extrabold bg-gradient-to-r from-[#03A559] to-emerald-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-xl transition-all py-7 rounded-xl border border-white/20 text-base flex items-center gap-2 hover:scale-[1.02]"
+									className="w-full sm:w-72 h-14 bg-[#03A559] hover:bg-[#028b4a] text-white font-semibold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 border border-[#028b4a]"
 								>
 									Mulai Ujian Online
 								</button>

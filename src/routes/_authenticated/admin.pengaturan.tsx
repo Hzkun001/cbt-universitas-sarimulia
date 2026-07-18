@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Settings, Upload, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { AdminPage, AdminPageHeader, AdminPageContent } from "@/components/cbt/AdminPage";
 
 export const Route = createFileRoute("/_authenticated/admin/pengaturan")({
   loader: async () => {
@@ -57,109 +58,125 @@ function PengaturanPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <Link to="/admin" className="text-sm text-muted-foreground hover:underline">
-          ← Dashboard
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-          <Settings className="h-6 w-6 text-primary" /> Pengaturan
-        </h1>
-        <p className="text-sm text-muted-foreground">Identitas aplikasi & kebijakan ujian.</p>
+    <AdminPage className="max-w-6xl pb-20">
+      <div className="flex flex-col gap-2 md:flex-row md:items-end justify-between pb-4">
+        <AdminPageHeader
+          title="Pengaturan Aplikasi"
+          description="Konfigurasi institusi, keamanan, browser ujian, dan branding CBT."
+        />
+        <Button onClick={save} className="h-10 px-8 shadow-sm">
+          Simpan Semua
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Identitas Aplikasi</CardTitle>
-          <CardDescription>
-            Nama dan deskripsi yang ditampilkan di header dan login.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <Label>Nama aplikasi</Label>
-            <Input
-              value={cfg.appName}
-              onChange={(e) => setCfg({ ...cfg, appName: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label>URL Logo Aplikasi (Opsional)</Label>
-            <div className="flex gap-4 items-start mt-1.5">
-              <div className="flex-1 space-y-2">
-                <div className="flex gap-2">
-                  <Input
-                    value={cfg.appLogo ?? ""}
-                    placeholder="https://.../logo.png atau klik Upload"
-                    onChange={(e) => setCfg({ ...cfg, appLogo: e.target.value })}
-                  />
-                  <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    ref={fileInputRef} 
-                    onChange={handleLogoUpload}
-                  />
-                  <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()}>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
-                  </Button>
+      {/* Section 1: Identitas Aplikasi */}
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Identitas Aplikasi</h2>
+          <p className="text-sm text-slate-500">
+            Informasi ini akan ditampilkan di halaman login dan pada panel atas dasbor aplikasi.
+          </p>
+        </div>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="p-6 space-y-6">
+            
+            <div className="space-y-2.5">
+              <Label className="text-slate-700 dark:text-slate-300 font-semibold">Nama Aplikasi</Label>
+              <Input
+                value={cfg.appName}
+                onChange={(e) => setCfg({ ...cfg, appName: e.target.value })}
+                className="max-w-md bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+              />
+            </div>
+
+            <div className="space-y-2.5">
+              <Label className="text-slate-700 dark:text-slate-300 font-semibold">Logo Aplikasi</Label>
+              <div className="flex flex-col sm:flex-row gap-6 items-start">
+                <div className="h-20 w-20 shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 flex items-center justify-center overflow-hidden">
+                  {cfg.appLogo ? (
+                    <img src={cfg.appLogo} alt="Logo" className="h-12 w-12 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
+                  ) : (
+                    <ImageIcon className="h-8 w-8 text-slate-300" />
+                  )}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-1">Kosongkan untuk menggunakan ikon bawaan sistem. Gambar yang diupload akan dikompresi otomatis.</p>
-              </div>
-              <div className="h-12 w-12 rounded-lg border bg-muted/50 flex items-center justify-center shrink-0 overflow-hidden">
-                {cfg.appLogo ? (
-                  <img src={cfg.appLogo} alt="Logo" className="h-8 w-8 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} onLoad={(e) => (e.currentTarget.style.display = 'block')} />
-                ) : (
-                  <span className="text-xs text-muted-foreground">None</span>
-                )}
+                <div className="flex-1 space-y-3 w-full">
+                  <div className="flex gap-2 max-w-md">
+                    <Input
+                      value={cfg.appLogo ?? ""}
+                      placeholder="https://... atau klik Upload"
+                      onChange={(e) => setCfg({ ...cfg, appLogo: e.target.value })}
+                      className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 font-mono text-xs"
+                    />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      ref={fileInputRef} 
+                      onChange={handleLogoUpload}
+                    />
+                    <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()} className="shrink-0 shadow-sm border-slate-200 dark:border-slate-700">
+                      <Upload className="h-4 w-4 mr-2" /> Upload
+                    </Button>
+                  </div>
+                  <p className="text-xs text-slate-500">Mendukung format PNG/JPG. Gambar akan diubah ukurannya secara otomatis (max 200px).</p>
+                </div>
               </div>
             </div>
-          </div>
-          <div>
-            <Label>Deskripsi</Label>
-            <Textarea
-              value={cfg.appDeskripsi}
-              onChange={(e) => setCfg({ ...cfg, appDeskripsi: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label>Pesan di halaman login</Label>
-            <Textarea
-              value={cfg.pesanLogin}
-              onChange={(e) => setCfg({ ...cfg, pesanLogin: e.target.value })}
-            />
-          </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Kebijakan Ujian</CardTitle>
-          <CardDescription>Pengaturan default untuk perangkat & sesi.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+            <div className="space-y-2.5">
+              <Label className="text-slate-700 dark:text-slate-300 font-semibold">Deskripsi Singkat</Label>
+              <Textarea
+                value={cfg.appDeskripsi}
+                onChange={(e) => setCfg({ ...cfg, appDeskripsi: e.target.value })}
+                className="min-h-[80px] bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+              />
+            </div>
+
+            <div className="space-y-2.5">
+              <Label className="text-slate-700 dark:text-slate-300 font-semibold">Pengumuman Halaman Login</Label>
+              <Textarea
+                value={cfg.pesanLogin}
+                onChange={(e) => setCfg({ ...cfg, pesanLogin: e.target.value })}
+                className="min-h-[80px] bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                placeholder="Ketik pengumuman atau instruksi untuk peserta..."
+              />
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div className="h-px w-full bg-slate-200 dark:bg-slate-800/60" />
+
+      {/* Section 2: Kebijakan Ujian */}
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Kebijakan Ujian</h2>
+          <p className="text-sm text-slate-500">
+            Konfigurasi keamanan dan pembatasan akses perangkat untuk melindungi integritas pelaksanaan ujian.
+          </p>
+        </div>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
           <ToggleRow
-            label="Kunci akses dari perangkat mobile"
-            desc="Kontrol ini belum diberlakukan: membuka aplikasi dari perangkat mobile tetap diizinkan."
+            label="Kunci akses dari perangkat Mobile"
+            desc="Mencegah peserta mengakses aplikasi ujian melalui smartphone atau tablet."
             checked={cfg.mobileLock}
             onChange={(v) => setCfg({ ...cfg, mobileLock: v })}
             disabled
-            badge="Belum diberlakukan"
+            badge="Belum Tersedia"
           />
           <ToggleRow
-            label="Izinkan multi-device"
-            desc="Kontrol ini belum diberlakukan: jumlah perangkat aktif belum dibatasi oleh sistem."
+            label="Izinkan Multi-Device"
+            desc="Mengizinkan satu akun mahasiswa login dari lebih dari satu perangkat pada waktu yang bersamaan."
             checked={cfg.multiDevice}
             onChange={(v) => setCfg({ ...cfg, multiDevice: v })}
             disabled
-            badge="Belum diberlakukan"
+            badge="Belum Tersedia"
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Button onClick={save}>Simpan pengaturan</Button>
-    </div>
+    </AdminPage>
   );
 }
 
@@ -179,22 +196,21 @@ function ToggleRow({
   badge?: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded border p-3">
-      <div>
-        <div className="flex items-center gap-2 text-sm font-medium">
-          {label}
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+      <div className="flex-1">
+        <div className="flex items-center gap-3 mb-1">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{label}</h3>
           {badge && (
-            <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-normal uppercase tracking-wide text-muted-foreground">
+            <span className="rounded-md border border-amber-200/60 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
               {badge}
             </span>
           )}
         </div>
-        <div className="text-xs text-muted-foreground">{desc}</div>
+        <p className="text-xs text-slate-500 leading-relaxed pr-6">{desc}</p>
       </div>
-      {/* Disabled controls are not yet enforced (Issue #13, V1 hide-and-document):
-          the Switch is non-interactive so it cannot imply protection that does
-          not exist. The stored config value is still shown read-only. */}
-      <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
+      <div className="shrink-0 mt-3 sm:mt-0">
+        <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} className="data-[state=checked]:bg-emerald-500" />
+      </div>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Sparkles, Lock, User, ArrowRight } from "lucide-react";
+import { Sparkles, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -55,9 +55,15 @@ export function LoginModal({ isOpen, onClose, redirectUrl }: LoginModalProps) {
         toast.error(res.error ?? "Gagal masuk");
         return;
       }
+      if (res.role !== "mahasiswa") {
+        await useAuthStore.getState().logout();
+        toast.error("Form ini khusus untuk Peserta Ujian. Akses ditolak.");
+        return;
+      }
+
       toast.success("Berhasil masuk");
 
-      const fallback = res.role === "mahasiswa" ? "/peserta" : "/admin";
+      const fallback = "/peserta";
       const redirect = redirectUrl?.startsWith("/")
         ? new URL(redirectUrl, window.location.origin)
         : undefined;
@@ -110,6 +116,10 @@ export function LoginModal({ isOpen, onClose, redirectUrl }: LoginModalProps) {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Masukkan username"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     className="pl-10 h-12 bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 rounded-xl focus-visible:ring-[#03A559] focus-visible:border-[#03A559] transition-all font-medium placeholder:text-slate-400"
                     required
                   />
@@ -128,6 +138,7 @@ export function LoginModal({ isOpen, onClose, redirectUrl }: LoginModalProps) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
+                    autoComplete="current-password"
                     className="pl-10 h-12 bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 rounded-xl focus-visible:ring-[#03A559] focus-visible:border-[#03A559] transition-all font-medium placeholder:text-slate-400 tracking-widest"
                     required
                   />
@@ -137,16 +148,16 @@ export function LoginModal({ isOpen, onClose, redirectUrl }: LoginModalProps) {
 
             <Button 
               type="submit" 
-              className="w-full h-12 rounded-xl bg-gradient-to-r from-[#03A559] to-emerald-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-lg hover:shadow-emerald-500/25 border-0 font-bold tracking-wide transition-all group" 
+              className="w-full h-12 rounded-xl bg-[#03A559] hover:bg-[#028b4a] text-white font-semibold transition-all border border-[#028b4a]" 
               disabled={busy}
             >
               {busy ? (
-                <span className="flex items-center gap-2">
+                <span className="flex items-center justify-center w-full gap-2">
                   <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                   Memverifikasi...
                 </span>
               ) : (
-                <span className="flex items-center justify-center gap-2">
+                <span className="flex items-center justify-center w-full gap-2">
                   Masuk Sekarang
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </span>
@@ -157,16 +168,8 @@ export function LoginModal({ isOpen, onClose, redirectUrl }: LoginModalProps) {
               <p className="font-bold text-slate-700 dark:text-slate-300 mb-1.5">Akses Demo:</p>
               <ul className="space-y-1.5 font-medium">
                 <li className="flex justify-between items-center bg-white dark:bg-black/20 px-2 py-1.5 rounded-md border border-slate-100 dark:border-white/5">
-                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Admin</span>
-                  <code className="font-mono text-[11px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-green-700 dark:text-green-300">admin / admin123</code>
-                </li>
-                <li className="flex justify-between items-center bg-white dark:bg-black/20 px-2 py-1.5 rounded-md border border-slate-100 dark:border-white/5">
-                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Evaluator</span>
-                  <code className="font-mono text-[11px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-green-700 dark:text-green-300">guru / guru123</code>
-                </li>
-                <li className="flex justify-between items-center bg-white dark:bg-black/20 px-2 py-1.5 rounded-md border border-slate-100 dark:border-white/5">
-                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Peserta</span>
-                  <code className="font-mono text-[11px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-green-700 dark:text-green-300">siswa1 / siswa1123</code>
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Peserta (Demo)</span>
+                  <code className="font-mono text-[11px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-green-700 dark:text-green-300">alif.mahendra / peserta123</code>
                 </li>
               </ul>
             </div>

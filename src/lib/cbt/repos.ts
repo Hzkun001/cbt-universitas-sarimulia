@@ -4,6 +4,10 @@ import { mutateUserServer, mutateGroupServer } from "@/lib/server/users/function
 import { mutateModulServer, mutateTopikServer, mutateSoalServer } from "@/lib/server/modul/functions";
 import { mutateSesiServer } from "@/lib/server/sesi/functions";
 import { getTodaysExamsServer } from "@/lib/server/exams";
+import { 
+	mutateFakultasServer, mutateJurusanServer, mutateProdiServer, 
+	mutateTahunAkademikServer, mutateSemesterServer, mutateMataKuliahServer 
+} from "@/lib/server/akademik/functions";
 import { toast } from "sonner";
 import type {
 	AppConfig,
@@ -192,6 +196,12 @@ function runEntityMutation(
 		case "ujian": mutationPromise = mutateUjianServer({ data: { action, payload } }); break;
 		case "token": mutationPromise = mutateTokenServer({ data: { action, payload } }); break;
 		case "sesi": mutationPromise = mutateSesiServer({ data: { action, payload } }); break;
+		case "fakultas": mutationPromise = mutateFakultasServer({ data: { action: action as any, payload } }); break;
+		case "jurusan": mutationPromise = mutateJurusanServer({ data: { action: action as any, payload } }); break;
+		case "prodi": mutationPromise = mutateProdiServer({ data: { action: action as any, payload } }); break;
+		case "tahunAkademik": mutationPromise = mutateTahunAkademikServer({ data: { action: action as any, payload } }); break;
+		case "semester": mutationPromise = mutateSemesterServer({ data: { action: action as any, payload } }); break;
+		case "mataKuliah": mutationPromise = mutateMataKuliahServer({ data: { action: action as any, payload } }); break;
 		default: mutationPromise = Promise.resolve({ ok: false, error: "Unknown entity" });
 	}
 
