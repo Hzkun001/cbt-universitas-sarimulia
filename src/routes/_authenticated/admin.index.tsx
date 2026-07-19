@@ -59,7 +59,7 @@ function CommandCenter() {
             </span>
             <span className="text-slate-300 dark:text-slate-700">•</span>
             <span>
-              {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}
+              {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </span>
           </div>
         </div>
@@ -166,7 +166,7 @@ function CommandCenter() {
                       <h3 className="font-medium text-slate-800 dark:text-slate-200">{exam.nama}</h3>
                     </div>
                     <div className="ml-auto text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-md">
-                      {new Date(exam.beginAt!).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
+                      {new Date(exam.beginAt!).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
                     </div>
                   </div>
                 ))}
