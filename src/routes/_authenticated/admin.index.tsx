@@ -288,6 +288,29 @@ function CommandCenter() {
             </section>
           )}
 
+          {/* System Info */}
+          <section className="bg-slate-50 dark:bg-slate-900/30 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 p-6 sm:p-8">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white mb-4">
+              Informasi Sistem
+            </h2>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+                <span className="text-slate-600 dark:text-slate-400 font-medium">Database</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-300 flex items-center gap-1.5">
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div> SQLite Local
+                </span>
+              </div>
+              <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
+                <span className="text-slate-600 dark:text-slate-400 font-medium">Engine</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-300">Prisma ORM</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600 dark:text-slate-400 font-medium">Version</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-300">v1.2.0</span>
+              </div>
+            </div>
+          </section>
+
         </div>
       </div>
     </div>
