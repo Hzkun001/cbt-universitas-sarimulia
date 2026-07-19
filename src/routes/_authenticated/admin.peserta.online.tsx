@@ -62,35 +62,34 @@ function OnlinePage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-20">
       
-      {/* Premium Hero Heading */}
-      <div className="relative overflow-hidden rounded-[22px] bg-slate-900 dark:bg-slate-950 p-6 sm:p-10 border border-slate-800 shadow-xl shadow-slate-900/20">
-        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none mix-blend-overlay"></div>
-        <div className="absolute bottom-0 left-20 w-64 h-64 bg-blue-500/10 blur-3xl rounded-full pointer-events-none mix-blend-overlay"></div>
-        
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div className="flex flex-col gap-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 w-fit backdrop-blur-md">
-              <span className="relative flex h-2.5 w-2.5 items-center justify-center">
+      {/* Functional Feature Heading */}
+      <div className="border-b border-slate-200 dark:border-slate-800 pb-5">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-800/50 text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              <span className="relative flex h-1.5 w-1.5 items-center justify-center">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                Live Monitoring Active
-              </span>
+              Sistem Pengawasan Aktif
             </div>
-            
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-2">
-                Pantau Ujian Live
-              </h1>
-              <p className="text-slate-400 text-sm sm:text-base max-w-2xl leading-relaxed">
-                Pusat kendali pengawasan. Pantau aktivitas peserta secara real-time, lacak progres pengerjaan, dan deteksi anomali pelanggaran secara otomatis.
-              </p>
-            </div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Pantau Ujian Live</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Monitoring real-time aktivitas peserta, pelacakan progres, dan deteksi anomali.
+            </p>
           </div>
           
-          <div className="hidden md:flex h-20 w-20 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm items-center justify-center shrink-0">
-            <MonitorPlay className="h-10 w-10 text-slate-300 opacity-50" />
+          {/* Quick Stats in Header */}
+          <div className="hidden sm:flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+             <div className="flex items-center gap-2">
+               <Activity className="h-4 w-4 text-emerald-500" />
+               <span className="font-semibold text-slate-900 dark:text-white">{sesis.length}</span> Aktif
+             </div>
+             <div className="w-px h-4 bg-slate-300 dark:bg-slate-700"></div>
+             <div className="flex items-center gap-2">
+               <AlertTriangle className="h-4 w-4 text-rose-500" />
+               <span className="font-semibold text-rose-600 dark:text-rose-400">{totalPelanggaran}</span> Insiden
+             </div>
           </div>
         </div>
       </div>
