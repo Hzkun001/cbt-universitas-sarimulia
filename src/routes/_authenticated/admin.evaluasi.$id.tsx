@@ -63,8 +63,8 @@ function EvaluasiSesi() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-12 pb-32">
-      <div className="mb-12">
+    <div className="mx-auto max-w-3xl space-y-8 pb-32">
+      <div className="mb-6">
         <Link 
           to="/admin/evaluasi" 
           className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors mb-6 inline-block"

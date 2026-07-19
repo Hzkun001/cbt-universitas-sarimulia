@@ -37,7 +37,7 @@ function EvaluasiUjianList() {
   const totalBelum = items.reduce((acc, curr) => acc + curr.belum, 0);
 
   return (
-    <div className="mx-auto max-w-4xl py-12 px-4 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-4xl space-y-6">
       <div className="mb-4">
         <Link to="/admin/evaluasi" className="text-sm text-slate-500 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors">
           ← Back to Inbox

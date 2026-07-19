@@ -41,7 +41,7 @@ function CommandCenter() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 pb-12 pt-6 animate-in fade-in duration-500">
+    <div className="mx-auto max-w-6xl space-y-8 animate-in fade-in duration-500">
       
       {/* 1. Header (The "Now" Context) */}
       <header className="flex flex-col gap-4 md:flex-row md:items-end justify-between border-b border-slate-200 dark:border-white/10 pb-6">

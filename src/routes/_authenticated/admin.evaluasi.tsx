@@ -52,7 +52,7 @@ function EvaluasiList() {
   const totalBelumEssay = items.reduce((acc, curr) => acc + curr.belumEssay, 0);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
+    <div className="mx-auto max-w-6xl space-y-8">
       {/* Header & Quick Stats */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8">
         <div>
