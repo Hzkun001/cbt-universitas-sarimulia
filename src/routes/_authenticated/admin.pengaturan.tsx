@@ -88,7 +88,7 @@ function PengaturanPage() {
               <Input
                 value={cfg.appName}
                 onChange={(e) => setCfg({ ...cfg, appName: e.target.value })}
-                className="max-w-md bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
               />
             </div>
 
@@ -103,7 +103,7 @@ function PengaturanPage() {
                   )}
                 </div>
                 <div className="flex-1 space-y-3 w-full">
-                  <div className="flex gap-2 max-w-md">
+                  <div className="flex gap-2">
                     <Input
                       value={cfg.appLogo ?? ""}
                       placeholder="https://... atau klik Upload"
