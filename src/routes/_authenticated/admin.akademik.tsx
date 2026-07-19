@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
-import { Building2, GraduationCap, Library, Network, Calendar, Clock, BookOpen, ChevronRight, Info } from "lucide-react";
+import { Building2, GraduationCap, Network, Calendar, Clock, BookOpen, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/akademik")({
   component: AkademikLayout,
@@ -34,69 +34,65 @@ function AkademikLayout() {
   const { pathname } = useLocation();
 
   return (
-    <div className="relative min-h-screen pb-24">
-      {/* Studio-Tier Glow */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-50/40 via-white to-white dark:from-indigo-950/20 dark:via-zinc-950 dark:to-zinc-950 -z-10" />
+    <div className="mx-auto max-w-6xl space-y-6">
+      
+      {/* Header */}
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          Data Akademik
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Kelola data induk institusi. Konfigurasi di sini akan menjadi fondasi bagi pengelolaan mahasiswa, dosen, dan mata kuliah.
+        </p>
+      </div>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 space-y-12">
-        {/* Header */}
-        <div className="space-y-4">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
-            Data Akademik
-          </h1>
-          <p className="text-base text-slate-500 dark:text-zinc-400 font-medium max-w-2xl leading-relaxed">
-            Kelola data induk institusi. Konfigurasi di sini akan menjadi fondasi bagi pengelolaan mahasiswa, dosen, dan mata kuliah.
-          </p>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-10 items-start">
-          
-          {/* Sidebar Navigation */}
-          <aside className="w-full lg:w-72 shrink-0 space-y-8">
-            {TREE_MENU.map((group, idx) => (
-              <div key={idx} className="space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500 px-1">
-                  {group.section}
-                </h4>
-                <nav className="flex flex-col space-y-1">
-                  {group.items.map((item) => {
-                    const active = pathname.startsWith(item.to);
-                    const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.to}
-                        to={item.to}
-                        className={cn(
-                          "group flex items-center justify-between px-3 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200",
-                          active
-                            ? "bg-slate-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-md shadow-slate-900/10"
-                            : "text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-zinc-100"
-                        )}
-                        style={{ marginLeft: `${item.indent * 12}px` }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon className={cn(
-                            "w-4 h-4 shrink-0 transition-colors", 
-                            active ? "text-white/80 dark:text-zinc-900/80" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-zinc-300"
-                          )} />
-                          {item.label}
-                        </div>
-                        {active && <ChevronRight className="w-4 h-4 opacity-70" />}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </div>
-            ))}
-          </aside>
-
-          {/* Content Outlet */}
-          <main className="flex-1 w-full bg-white/80 dark:bg-zinc-900/40 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-zinc-800/80 shadow-sm min-h-[600px] overflow-hidden">
-            <div className="p-6 md:p-8">
-              <Outlet />
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
+        
+        {/* Sidebar Navigation */}
+        <aside className="w-full lg:w-64 shrink-0 space-y-8">
+          {TREE_MENU.map((group, idx) => (
+            <div key={idx} className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {group.section}
+              </h4>
+              <nav className="flex flex-col space-y-1">
+                {group.items.map((item) => {
+                  const active = pathname.startsWith(item.to);
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={cn(
+                        "group flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                        active
+                          ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white font-semibold"
+                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200"
+                      )}
+                      style={{ marginLeft: `${item.indent * 12}px` }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className={cn(
+                          "h-4 w-4 shrink-0", 
+                          active ? "text-slate-900 dark:text-white" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300"
+                        )} />
+                        {item.label}
+                      </div>
+                      {active && <ChevronRight className="h-4 w-4 opacity-50" />}
+                    </Link>
+                  );
+                })}
+              </nav>
             </div>
-          </main>
-        </div>
+          ))}
+        </aside>
+
+        {/* Content Outlet */}
+        <main className="flex-1 w-full bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm min-h-[500px] overflow-hidden">
+          <div className="p-6">
+            <Outlet />
+          </div>
+        </main>
       </div>
     </div>
   );
