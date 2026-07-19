@@ -72,41 +72,35 @@ function CommandCenter() {
   return (
     <div className="mx-auto max-w-7xl space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       
-      {/* 1. PREMIUM HERO SECTION */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-500 p-8 sm:p-12 shadow-2xl shadow-blue-500/20 text-white border border-white/10">
-        {/* Background decorative elements */}
-        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-white/10 blur-3xl rounded-full pointer-events-none mix-blend-overlay"></div>
-        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-64 h-64 bg-cyan-400/20 blur-3xl rounded-full pointer-events-none mix-blend-overlay"></div>
-        
+      {/* 1. HERO SECTION (Native Style) */}
+      <section className="relative overflow-hidden rounded-[22px] bg-white dark:bg-slate-900 p-8 sm:p-10 border border-slate-200 dark:border-slate-800 shadow-sm">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="space-y-4 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-xs font-medium text-cyan-100">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              System Online & Secure
+              Sistem Aktif
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-sm">
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
               Selamat datang kembali, <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-white">
-                {user.namaLengkap}
-              </span>
+              <span>{user.namaLengkap}</span>
             </h1>
-            <p className="text-blue-100 text-lg max-w-xl leading-relaxed opacity-90">
+            <p className="text-slate-500 dark:text-slate-400 text-base max-w-xl leading-relaxed">
               Pusat kendali ujian interaktif Anda. Pantau ujian secara real-time, kelola bank soal, dan hasilkan laporan performa dengan satu klik.
             </p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-            <Button size="lg" className="bg-white text-blue-700 hover:bg-blue-50 shadow-xl shadow-blue-900/20 font-semibold rounded-xl h-12 px-6 transition-all hover:scale-105 active:scale-95" asChild>
+            <Button size="lg" className="font-semibold rounded-xl h-11 px-6 shadow-sm" asChild>
               <Link to="/admin/ujian">
-                <Plus className="mr-2 h-5 w-5" /> Jadwalkan Ujian
+                <Plus className="mr-2 h-4 w-4" /> Jadwalkan Ujian
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md shadow-xl shadow-blue-900/10 font-semibold rounded-xl h-12 px-6 transition-all hover:scale-105 active:scale-95" asChild>
+            <Button size="lg" variant="outline" className="font-semibold rounded-xl h-11 px-6 shadow-sm" asChild>
               <Link to="/admin/modul">
-                <BookOpen className="mr-2 h-5 w-5" /> Bank Soal
+                <BookOpen className="mr-2 h-4 w-4" /> Bank Soal
               </Link>
             </Button>
           </div>
@@ -116,31 +110,27 @@ function CommandCenter() {
       {/* 2. STATS GRID (Premium Glass Cards) */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         <StatCard 
-          icon={<Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />} 
+          icon={<Users className="h-5 w-5" />} 
           label="Total Peserta" 
           value={counts.peserta} 
           trend={newPeserta > 0 ? `+${newPeserta} baru` : null}
-          color="blue"
         />
         <StatCard 
-          icon={<FileText className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />} 
+          icon={<FileText className="h-5 w-5" />} 
           label="Total Ujian" 
           value={counts.ujian} 
           trend={newUjian > 0 ? `+${newUjian} ujian` : null}
-          color="emerald"
         />
         <StatCard 
-          icon={<BookOpen className="h-6 w-6 text-amber-600 dark:text-amber-400" />} 
+          icon={<BookOpen className="h-5 w-5" />} 
           label="Bank Soal" 
           value={counts.soal} 
           trend={newSoal > 0 ? `+${newSoal} soal` : null}
-          color="amber"
         />
         <StatCard 
-          icon={<Zap className="h-6 w-6 text-purple-600 dark:text-purple-400" />} 
+          icon={<Zap className="h-5 w-5" />} 
           label="Sesi Ujian Aktif" 
           value={counts.sesi} 
-          color="purple"
         />
       </section>
 
@@ -305,25 +295,20 @@ function CommandCenter() {
 }
 
 // Reusable Stat Card Component
-function StatCard({ icon, label, value, trend, color }: { icon: React.ReactNode, label: string, value: number, trend?: string | null, color: 'blue' | 'emerald' | 'amber' | 'purple' }) {
-  const colorMap = {
-    blue: "bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 group-hover:border-blue-300 dark:group-hover:border-blue-700",
-    emerald: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/50 text-emerald-600 dark:text-emerald-400 group-hover:border-emerald-300 dark:group-hover:border-emerald-700",
-    amber: "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-900/50 text-amber-600 dark:text-amber-400 group-hover:border-amber-300 dark:group-hover:border-amber-700",
-    purple: "bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-900/50 text-purple-600 dark:text-purple-400 group-hover:border-purple-300 dark:group-hover:border-purple-700",
-  };
-
+function StatCard({ icon, label, value, trend }: { icon: React.ReactNode, label: string, value: number, trend?: string | null }) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200/60 dark:border-slate-800/60 shadow-lg shadow-slate-200/30 dark:shadow-black/10 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-      <div className={`inline-flex p-3 rounded-2xl mb-4 border transition-colors ${colorMap[color]}`}>
-        {icon}
+    <div className="bg-white dark:bg-slate-900 rounded-[22px] p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between mb-4">
+        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</h3>
+        <div className="text-slate-400 dark:text-slate-500">
+          {icon}
+        </div>
       </div>
       <div>
-        <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">{label}</h3>
         <div className="flex items-end gap-2">
-          <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{value}</span>
+          <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{value}</span>
           {trend && (
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full mb-1.5 ${colorMap[color].replace('border-', 'bg-').split(' ')[0]} ${colorMap[color].split(' ')[2]}`}>
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full mb-1.5">
               {trend}
             </span>
           )}

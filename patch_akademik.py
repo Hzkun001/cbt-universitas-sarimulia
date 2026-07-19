@@ -1,4 +1,9 @@
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import re
+
+with open('src/routes/_authenticated/admin.akademik.tsx', 'r') as f:
+    content = f.read()
+
+replacement = """import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { Building2, GraduationCap, Library, Network, Calendar, Clock, BookOpen, ChevronRight, Info } from "lucide-react";
 
@@ -41,12 +46,25 @@ function AkademikLayout() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 space-y-12">
         {/* Header */}
         <div className="space-y-4">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 dark:text-zinc-50">
             Data Akademik
           </h1>
           <p className="text-base text-slate-500 dark:text-zinc-400 font-medium max-w-2xl leading-relaxed">
             Kelola data induk institusi. Konfigurasi di sini akan menjadi fondasi bagi pengelolaan mahasiswa, dosen, dan mata kuliah.
           </p>
+        </div>
+
+        {/* Info Alert - Studio Tier */}
+        <div className="rounded-2xl border border-indigo-200/60 dark:border-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-500/10 p-5 flex gap-4 items-start shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+            <Info className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-indigo-900 dark:text-indigo-200">Struktur Hierarki</h3>
+            <p className="mt-1 text-sm text-indigo-700/80 dark:text-indigo-300/80 font-medium leading-relaxed">
+              Data akademik saling terikat secara vertikal. Anda harus membuat tingkat tertinggi (Fakultas) terlebih dahulu sebelum dapat menambahkan turunannya (Jurusan & Program Studi).
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-10 items-start">
@@ -101,3 +119,8 @@ function AkademikLayout() {
     </div>
   );
 }
+"""
+
+with open('src/routes/_authenticated/admin.akademik.tsx', 'w') as f:
+    f.write(replacement)
+
