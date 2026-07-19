@@ -104,9 +104,9 @@ function UsersPage() {
                   </td>
                   <td className="p-4 text-center border-r border-slate-200 dark:border-slate-800">
                     {u.aktif ? (
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-success/15 text-success">Aktif</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">Aktif</span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-destructive/15 text-destructive">Nonaktif</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">Nonaktif</span>
                     )}
                   </td>
                   <td className="p-4 text-center space-x-2">
