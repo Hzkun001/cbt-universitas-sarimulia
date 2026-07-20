@@ -101,10 +101,9 @@ function EvaluasiList() {
               const progressPct = totalEssay > 0 ? (gradedEssay / totalEssay) * 100 : 100;
 
               return (
-                <Link 
+                <div 
                   key={ujian.id} 
-                  to="/admin/evaluasi/ujian/$id" 
-                  params={{ id: ujian.id }}
+                  onClick={() => navigate({ to: '/admin/evaluasi/ujian/$id', params: { id: ujian.id } })}
                   className="group block hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors cursor-pointer"
                 >
                   <div className="grid grid-cols-12 gap-4 px-6 py-4 items-center">
@@ -172,7 +171,7 @@ function EvaluasiList() {
                       <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
                     </div>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
