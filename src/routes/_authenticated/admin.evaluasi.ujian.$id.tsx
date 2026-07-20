@@ -14,11 +14,11 @@ function EvaluasiUjianList() {
   const visibleIds = new Set(visibleUjians(user).map((u) => u.id));
   
   if (!visibleIds.has(id)) {
-    return <div className="py-20 text-center text-sm font-medium text-slate-500">No access or exam not found.</div>;
+    return <div className="py-20 text-center text-sm font-medium text-slate-500">Tidak ada akses atau ujian tidak ditemukan.</div>;
   }
 
   const ujian = ujianRepo.byId(id);
-  if (!ujian) return <div className="py-20 text-center text-sm font-medium text-slate-500">Exam not found.</div>;
+  if (!ujian) return <div className="py-20 text-center text-sm font-medium text-slate-500">Ujian tidak ditemukan.</div>;
 
   const sesis = sesiRepo.all().filter((s) => s.status === "selesai" && s.ujianId === id);
   const users = usersRepo.all();
@@ -40,7 +40,7 @@ function EvaluasiUjianList() {
     <div className="mx-auto max-w-4xl space-y-6 pb-20">
       <div className="mb-4">
         <Link to="/admin/evaluasi" className="inline-flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-          ← Back to Inbox
+          ← Kembali ke Kotak Masuk
         </Link>
       </div>
       
@@ -50,15 +50,15 @@ function EvaluasiUjianList() {
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
           {totalBelum > 0 
-            ? <><span className="font-bold text-slate-700 dark:text-slate-300">{totalBelum}</span> tasks remaining from <span className="font-bold text-slate-700 dark:text-slate-300">{items.filter(x => x.belum > 0).length}</span> students.</>
-            : "All answers graded for this exam."}
+            ? <><span className="font-bold text-slate-700 dark:text-slate-300">{totalBelum}</span> jawaban belum dinilai dari <span className="font-bold text-slate-700 dark:text-slate-300">{items.filter(x => x.belum > 0).length}</span> peserta.</>
+            : "Semua jawaban pada ujian ini telah selesai dinilai."}
         </p>
       </div>
 
       <div className="bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sleek overflow-hidden">
         {items.length === 0 ? (
           <div className="py-20 text-center text-sm font-medium text-slate-400 dark:text-slate-500">
-            No submissions with essays found.
+            Tidak ada jawaban essay yang perlu dinilai.
           </div>
         ) : (
           <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -84,7 +84,7 @@ function EvaluasiUjianList() {
 
                   <div className="flex items-center gap-4 shrink-0 mt-2 sm:mt-0">
                     <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                      <span className="text-slate-700 dark:text-slate-300">{total - belum}</span> / {total} graded
+                      <span className="text-slate-700 dark:text-slate-300">{total - belum}</span> / {total} dinilai
                     </div>
                     {isWarning ? (
                       <div className="flex items-center justify-end gap-1.5 text-xs font-bold text-amber-700 dark:text-amber-500 w-24 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-md border border-amber-200/50 dark:border-amber-800/50">
@@ -92,11 +92,11 @@ function EvaluasiUjianList() {
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
                         </span>
-                        {belum} pending
+                        {belum} tertunda
                       </div>
                     ) : (
                       <div className="text-xs font-bold text-emerald-600 dark:text-emerald-500 w-24 justify-end flex items-center gap-1 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-800/50">
-                        Cleared
+                        Selesai
                       </div>
                     )}
                   </div>

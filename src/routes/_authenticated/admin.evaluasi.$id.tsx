@@ -59,7 +59,7 @@ function EvaluasiSesi() {
     const withMeta = { ...final, gradedAt: Date.now(), gradedBy: me!.id };
     sesiRepo.upsert(withMeta);
     setSesi(withMeta);
-    toast.success(`Tersimpan. Nilai Akhir: ${withMeta.skorTotal} / ${withMeta.maxSkor}`);
+    toast.success(`Berhasil disimpan. Nilai Akhir: ${withMeta.skorTotal} / ${withMeta.maxSkor}`);
   }
 
   return (
@@ -69,13 +69,13 @@ function EvaluasiSesi() {
           to="/admin/evaluasi" 
           className="text-sm font-bold text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 transition-colors mb-6 inline-flex items-center gap-1"
         >
-          ← Back to Inbox
+          ← Kembali ke Kotak Masuk
         </Link>
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-          {peserta?.namaLengkap || "Anonim"}
+          {peserta?.namaLengkap || "Peserta Anonim"}
         </h1>
         <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2">
-          {ujian.nama} • <span className="font-bold text-slate-700 dark:text-slate-300">{items.length}</span> essays to grade
+          {ujian.nama} • <span className="font-bold text-slate-700 dark:text-slate-300">{items.length}</span> essay untuk dinilai
         </p>
       </div>
 
@@ -95,11 +95,11 @@ function EvaluasiSesi() {
               {/* Question Header */}
               <div className="flex items-center justify-between px-6 py-4 bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  Question {idx + 1}
+                  Pertanyaan {idx + 1}
                 </span>
                 {isGraded ? (
                   <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-500 flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-800/30">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Graded
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Dinilai
                   </span>
                 ) : (
                   <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-500 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-md border border-amber-200/50 dark:border-amber-800/50">
@@ -107,7 +107,7 @@ function EvaluasiSesi() {
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
                     </span>
-                    Pending
+                    Belum
                   </span>
                 )}
               </div>
@@ -121,10 +121,10 @@ function EvaluasiSesi() {
                 {/* Student Answer */}
                 <div className="p-5 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200/50 dark:border-slate-800/50 mb-6">
                   <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 block">
-                    Student's Answer
+                    Jawaban Peserta
                   </span>
                   <div className="text-[15px] text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-serif leading-relaxed">
-                    {j.jawabanEssay ? j.jawabanEssay : <span className="text-slate-400 italic">No answer provided.</span>}
+                    {j.jawabanEssay ? j.jawabanEssay : <span className="text-slate-400 italic">Tidak ada jawaban yang dikirimkan.</span>}
                   </div>
                 </div>
 
@@ -133,7 +133,7 @@ function EvaluasiSesi() {
                   
                   {/* Score Input */}
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Score</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Nilai</span>
                     <div className="relative">
                       <input
                         type="number"
@@ -152,12 +152,12 @@ function EvaluasiSesi() {
 
                   {/* Note Input */}
                   <div className="flex-1 w-full flex flex-col sm:flex-row sm:items-center gap-3">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Feedback</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Catatan</span>
                     <input
                       type="text"
                       value={j.catatanGrader ?? ""}
                       onChange={(e) => setSkor(idx, j.skor, e.target.value)}
-                      placeholder="Add an optional note..."
+                      placeholder="Tambahkan evaluasi (opsional)..."
                       className="flex-1 w-full h-10 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
                     />
                   </div>
@@ -175,7 +175,7 @@ function EvaluasiSesi() {
           
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
             <div className="text-[11px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500">
-              {totalUngraded === 0 ? "All graded" : `${totalUngraded} remaining`}
+              {totalUngraded === 0 ? "Selesai Dinilai" : `${totalUngraded} Belum Dinilai`}
             </div>
             <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-slate-700 dark:bg-slate-300"></div>
             <div className="text-sm">
@@ -188,7 +188,7 @@ function EvaluasiSesi() {
             className="flex items-center gap-2 text-sm font-bold bg-blue-600 text-white px-5 sm:px-6 py-2.5 rounded-full hover:bg-blue-500 active:bg-blue-700 shadow-md transition-colors"
           >
             <Save className="h-4 w-4" />
-            Submit
+            Simpan Nilai
           </button>
         </div>
       </div>

@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_authenticated/admin/evaluasi")({
 });
 
 function formatDate(ts?: number) {
-  if (!ts) return "No date set";
+  if (!ts) return "Belum diatur";
   return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(ts));
 }
 
@@ -56,22 +56,22 @@ function EvaluasiList() {
       {/* Header & Quick Stats */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Manual Grading Inbox</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Kotak Masuk Evaluasi</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5">
-            Evaluate student essay submissions and assign manual scores.
+            Evaluasi dan berikan nilai pada jawaban essay peserta secara manual.
           </p>
         </div>
         
         {totalBelumEssay > 0 && (
           <div className="flex items-center gap-6 bg-slate-50 dark:bg-slate-900/50 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
             <div>
-              <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Pending Exams</div>
-              <div className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight">{items.filter(i => i.belumSesi > 0).length}</div>
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Perlu Dinilai</div>
+              <div className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight">{items.filter(i => i.belumSesi > 0).length} <span className="text-sm text-slate-400 font-medium">Ujian</span></div>
             </div>
             <div className="w-px h-8 bg-slate-200 dark:bg-slate-800"></div>
             <div>
-              <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Ungraded Essays</div>
-              <div className="text-lg font-bold text-amber-600 dark:text-amber-500 leading-tight">{totalBelumEssay}</div>
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Antrean Essay</div>
+              <div className="text-lg font-bold text-amber-600 dark:text-amber-500 leading-tight">{totalBelumEssay} <span className="text-sm text-amber-400 font-medium">Jawaban</span></div>
             </div>
           </div>
         )}
@@ -81,17 +81,17 @@ function EvaluasiList() {
       <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-950 shadow-sleek">
         {/* Table Header */}
         <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-xs font-bold text-slate-500 uppercase tracking-wider">
-          <div className="col-span-12 sm:col-span-5">Exam Reference</div>
-          <div className="hidden sm:block sm:col-span-2">Subject</div>
-          <div className="hidden sm:block sm:col-span-3">Completion Progress</div>
+          <div className="col-span-12 sm:col-span-5">Referensi Ujian</div>
+          <div className="hidden sm:block sm:col-span-2">Mata Kuliah</div>
+          <div className="hidden sm:block sm:col-span-3">Progres Penilaian</div>
           <div className="hidden sm:block sm:col-span-2 text-right">Status</div>
         </div>
 
         {items.length === 0 ? (
           <div className="py-24 text-center flex flex-col items-center">
             <CheckCircle2 className="h-10 w-10 text-emerald-500 mb-3 opacity-80" />
-            <span className="text-slate-900 dark:text-slate-100 font-bold">Inbox Zero</span>
-            <span className="text-sm text-slate-500 dark:text-slate-400 mt-1">All submissions have been graded.</span>
+            <span className="text-slate-900 dark:text-slate-100 font-bold">Kotak Masuk Bersih</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400 mt-1">Semua jawaban telah selesai dinilai.</span>
           </div>
         ) : (
           <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -136,14 +136,14 @@ function EvaluasiList() {
                           <span className="truncate">{mk.nama}</span>
                         </span>
                       ) : (
-                        <span className="text-[11px] text-slate-400 italic">No subject</span>
+                        <span className="text-[11px] text-slate-400 italic">Tanpa mata kuliah</span>
                       )}
                     </div>
 
                     {/* Col 3: Grading Progress */}
                     <div className="hidden sm:flex sm:col-span-3 flex-col justify-center">
                       <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                        <span>{gradedEssay} / {totalEssay} graded</span>
+                        <span>{gradedEssay} / {totalEssay} dinilai</span>
                         <span className="text-slate-700 dark:text-slate-300">{Math.round(progressPct)}%</span>
                       </div>
                       <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden shadow-inner">
@@ -162,11 +162,11 @@ function EvaluasiList() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
                           </span>
-                          {belumSesi} Needs Action
+                          {belumSesi} Tertunda
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-500">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Cleared
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Selesai
                         </div>
                       )}
                       <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
