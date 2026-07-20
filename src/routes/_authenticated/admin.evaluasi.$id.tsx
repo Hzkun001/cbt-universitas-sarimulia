@@ -170,8 +170,8 @@ function EvaluasiSesi() {
       </div>
 
       {/* Floating Bottom Bar (Tactile & Springy) */}
-      <div className="fixed bottom-6 left-0 right-0 pointer-events-none flex justify-center z-50">
-        <div className="pointer-events-auto flex items-center gap-5 sm:gap-8 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 sm:px-8 py-3.5 rounded-full shadow-popover-sleek border border-white/10 dark:border-black/5 backdrop-blur-lg">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 shadow-2xl">
+        <div className="flex items-center gap-5 sm:gap-8 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 sm:px-8 py-3.5 rounded-full shadow-popover-sleek border border-white/10 dark:border-black/5 backdrop-blur-lg">
           
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
             <div className="text-[11px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500">
