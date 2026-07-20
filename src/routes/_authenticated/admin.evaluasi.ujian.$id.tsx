@@ -67,18 +67,11 @@ function EvaluasiUjianList() {
               const isWarning = belum > 0;
 
               return (
-                <div
+                <Link
                   key={sesi.id}
-                  onClick={() => navigate({ to: '/admin/evaluasi/$id', params: { id: sesi.id } })}
+                  to="/admin/evaluasi/$id" 
+                  params={{ id: sesi.id }}
                   className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors cursor-pointer"
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      navigate({ to: '/admin/evaluasi/$id', params: { id: sesi.id } });
-                    }
-                  }}
                 >
                   <div className="flex flex-col min-w-0">
                     <span className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
@@ -107,7 +100,7 @@ function EvaluasiUjianList() {
                       </div>
                     )}
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
