@@ -76,9 +76,10 @@ function EvaluasiUjianList() {
               const isWarning = belum > 0;
 
               return (
-                <div
+                <Link
                   key={sesi.id}
-                  onClick={() => navigate({ to: '/admin/evaluasi/$id', params: { id: sesi.id } })}
+                  to="/admin/evaluasi/$id" 
+                  params={{ id: sesi.id }}
                   className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors cursor-pointer"
                 >
                   <div className="flex flex-col min-w-0">
@@ -108,7 +109,7 @@ function EvaluasiUjianList() {
                       </div>
                     )}
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
