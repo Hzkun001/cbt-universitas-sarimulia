@@ -4,7 +4,16 @@ import { useAuthStore } from "@/lib/cbt/auth-store";
 import { visibleUjians } from "@/lib/cbt/access";
 import { FileSignature, Calendar, BookOpen, ChevronRight, CheckCircle2 } from "lucide-react";
 
+import { hydrateRepos } from "@/lib/cbt/repos";
+
 export const Route = createFileRoute("/_authenticated/admin/evaluasi")({
+  loader: async () => {
+    try {
+      await hydrateRepos();
+    } catch (e) {
+      console.error(e);
+    }
+  },
   component: EvaluasiList,
 });
 

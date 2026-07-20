@@ -3,7 +3,16 @@ import { sesiRepo, ujianRepo, usersRepo, soalRepo } from "@/lib/cbt/repos";
 import { useAuthStore } from "@/lib/cbt/auth-store";
 import { visibleUjians } from "@/lib/cbt/access";
 
+import { hydrateRepos } from "@/lib/cbt/repos";
+
 export const Route = createFileRoute("/_authenticated/admin/evaluasi/ujian/$id")({
+  loader: async () => {
+    try {
+      await hydrateRepos();
+    } catch (e) {
+      console.error(e);
+    }
+  },
   component: EvaluasiUjianList,
 });
 
