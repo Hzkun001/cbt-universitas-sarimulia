@@ -73,7 +73,7 @@ function CommandCenter() {
     <div className="mx-auto max-w-7xl space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       
       {/* 1. HERO SECTION (Native Style) */}
-      <section className="relative overflow-hidden rounded-[22px] bg-white dark:bg-slate-900 p-8 sm:p-10 border border-slate-200 dark:border-slate-800 shadow-sm">
+      <section className="relative overflow-hidden rounded-[22px] bg-white dark:bg-slate-900 p-8 sm:p-10 border border-slate-200 dark:border-slate-800 shadow-sleek">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="space-y-4 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400">
@@ -93,12 +93,12 @@ function CommandCenter() {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-            <Button size="lg" className="font-semibold rounded-xl h-11 px-6 shadow-sm" asChild>
+            <Button size="lg" className="font-semibold rounded-xl h-11 px-6 shadow-sleek" asChild>
               <Link to="/admin/ujian">
                 <Plus className="mr-2 h-4 w-4" /> Jadwalkan Ujian
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="font-semibold rounded-xl h-11 px-6 shadow-sm" asChild>
+            <Button size="lg" variant="outline" className="font-semibold rounded-xl h-11 px-6 shadow-sleek" asChild>
               <Link to="/admin/modul">
                 <BookOpen className="mr-2 h-4 w-4" /> Bank Soal
               </Link>
@@ -183,7 +183,7 @@ function CommandCenter() {
               ) : (
                 <div className="grid gap-4">
                   {activeExams.map((exam) => (
-                    <div key={exam.id} className="group/card flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700/50 transition-all duration-300 cursor-pointer">
+                    <div key={exam.id} className="group/card flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sleek hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700/50 transition-all duration-300 cursor-pointer">
                       <div className="flex items-center gap-4 mb-4 sm:mb-0">
                         <div className="relative">
                           <div className="absolute inset-0 bg-emerald-400 blur-md opacity-20 rounded-full group-hover/card:opacity-40 transition-opacity"></div>
@@ -240,7 +240,7 @@ function CommandCenter() {
                       <div className="text-amber-600 dark:text-amber-500 bg-amber-100 dark:bg-amber-900/50 p-2 rounded-xl">
                         {task.icon}
                       </div>
-                      <div className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
+                      <div className="bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full shadow-sleek">
                         {task.count} antrean
                       </div>
                     </div>
@@ -271,7 +271,7 @@ function CommandCenter() {
                 <div className="space-y-6 relative">
                   {upcomingExams.map((exam) => (
                     <div key={exam.id} className="flex gap-4 group cursor-default">
-                      <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-900 border-4 border-white dark:border-slate-900 shadow-sm">
+                      <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white dark:bg-slate-900 border-4 border-white dark:border-slate-900 shadow-sleek">
                         <div className="h-3 w-3 rounded-full bg-blue-500 group-hover:scale-150 transition-transform duration-300"></div>
                       </div>
                       <div className="pt-2 pb-2">

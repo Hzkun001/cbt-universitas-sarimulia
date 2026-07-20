@@ -83,7 +83,7 @@ function OnlinePage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sleek hover:shadow-md transition-shadow flex items-center gap-4">
           <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center border border-emerald-100 dark:border-emerald-800/30">
             <Activity className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
           </div>
@@ -95,7 +95,7 @@ function OnlinePage() {
           </div>
         </div>
         
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sleek hover:shadow-md transition-shadow flex items-center gap-4">
           <div className="h-12 w-12 rounded-xl bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center border border-rose-100 dark:border-rose-800/30">
             <AlertTriangle className="h-6 w-6 text-rose-600 dark:text-rose-400" />
           </div>
@@ -107,7 +107,7 @@ function OnlinePage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex items-center gap-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sleek hover:shadow-md transition-shadow flex items-center gap-4">
           <div className="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center border border-blue-100 dark:border-blue-800/30">
             <CheckCircle2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
           </div>
@@ -121,7 +121,7 @@ function OnlinePage() {
       </div>
 
       {/* Main Table Area */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sleek overflow-hidden flex flex-col">
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-4">
           <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100 px-1 uppercase tracking-wider">Daftar Peserta Live</h2>
           <div className="relative w-full sm:w-72">
