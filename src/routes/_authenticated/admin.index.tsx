@@ -71,7 +71,7 @@ function CommandCenter() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+    <div className="w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       
       {/* 1. HERO SECTION (Native Style) */}
       <section className="relative overflow-hidden rounded-[22px] bg-white dark:bg-slate-900 p-8 sm:p-10 border border-slate-200 dark:border-slate-800 shadow-sleek">
