@@ -2,9 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { sesiRepo, mataKuliahRepo, semesterRepo, usersRepo, ujianRepo } from "@/lib/cbt/repos";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuthStore } from "@/lib/cbt/auth-store";
+import { AdminPage, AdminPageHeader } from "@/components/cbt/AdminPage";
 import { visibleUjians } from "@/lib/cbt/access";
 import { BookOpen, BarChart3, ChevronRight, Activity } from "lucide-react";
-import { AdminPage } from "@/components/cbt/AdminPage";
 
 export const Route = createFileRoute("/_authenticated/admin/analitik/")({
   component: AnalitikIndex,
@@ -21,43 +21,35 @@ export function AnalitikIndex() {
   const totalSelesai = semuaSesi.filter((s) => s.status === "selesai").length;
 
   return (
-    <AdminPage className="max-w-6xl pb-20 space-y-8">
-      
-      {/* Sleek Enterprise Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200/80 dark:border-slate-800/80">
-        <div className="space-y-1.5">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-zinc-100">
-            Analisis & Hasil
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Ringkasan aktivitas ujian, laporan hasil, dan peringkat kelas.
-          </p>
-        </div>
-        
-        {/* Minimalist Data Points */}
-        <div className="flex items-center gap-8 text-sm">
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-0.5">Total Ujian</span>
-            <span className="text-xl font-medium text-slate-900 dark:text-white tabular-nums leading-none">
-              {semuaUjian.length}
-            </span>
+    <AdminPage>
+      <AdminPageHeader
+        title="Analisis & Hasil"
+        description="Ringkasan aktivitas ujian, laporan hasil, dan peringkat kelas."
+        action={
+          <div className="flex items-center gap-8 text-sm">
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-0.5">Total Ujian</span>
+              <span className="text-xl font-medium text-slate-900 dark:text-white tabular-nums leading-none">
+                {semuaUjian.length}
+              </span>
+            </div>
+            <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-0.5">Peserta Terdaftar</span>
+              <span className="text-xl font-medium text-slate-900 dark:text-white tabular-nums leading-none">
+                {peserta.length}
+              </span>
+            </div>
+            <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-0.5">Sesi Selesai</span>
+              <span className="text-xl font-medium text-primary tabular-nums leading-none">
+                {totalSelesai}
+              </span>
+            </div>
           </div>
-          <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-0.5">Peserta Terdaftar</span>
-            <span className="text-xl font-medium text-slate-900 dark:text-white tabular-nums leading-none">
-              {peserta.length}
-            </span>
-          </div>
-          <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-0.5">Sesi Selesai</span>
-            <span className="text-xl font-medium text-primary tabular-nums leading-none">
-              {totalSelesai}
-            </span>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Data List */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">

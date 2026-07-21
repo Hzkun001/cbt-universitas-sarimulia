@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { sesiRepo, ujianRepo, soalRepo, mataKuliahRepo } from "@/lib/cbt/repos";
 import { useAuthStore } from "@/lib/cbt/auth-store";
 import { visibleUjians } from "@/lib/cbt/access";
+import { AdminPage, AdminPageHeader } from "@/components/cbt/AdminPage";
 import { ClipboardCheck, Calendar, BookOpen, ChevronRight, CheckCircle2 } from "lucide-react";
 
 import { hydrateRepos } from "@/lib/cbt/repos";
@@ -61,36 +62,31 @@ function EvaluasiList() {
   const totalBelumEssay = items.reduce((acc, curr) => acc + curr.belumEssay, 0);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 pb-20">
-      {/* Sleek Enterprise Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-200/80 dark:border-slate-800/80">
-        <div className="space-y-1.5">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-zinc-100">
-            Penilaian Essay
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Pilih ujian untuk mulai memeriksa dan memberikan nilai pada jawaban essay.
-          </p>
-        </div>
-        
-        {totalBelumEssay > 0 && (
-          <div className="flex items-center gap-8 text-sm">
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-0.5">Butuh Penilaian</span>
-              <span className="text-xl font-medium text-slate-900 dark:text-white tabular-nums leading-none">
-                {items.filter(i => i.belumSesi > 0).length} <span className="text-sm text-slate-400 font-medium ml-1">Ujian</span>
-              </span>
+    <AdminPage>
+      <AdminPageHeader
+        title="Penilaian Essay"
+        description="Pilih ujian untuk mulai memeriksa dan memberikan nilai pada jawaban essay."
+        action={
+          totalBelumEssay > 0 ? (
+            <div className="flex items-center gap-8 text-sm">
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-0.5">Butuh Penilaian</span>
+                <span className="text-xl font-medium text-slate-900 dark:text-white tabular-nums leading-none">
+                  {items.filter(i => i.belumSesi > 0).length} <span className="text-sm text-slate-400 font-medium ml-1">Ujian</span>
+                </span>
+              </div>
+              <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-0.5">Belum Dinilai</span>
+                <span className="text-xl font-medium text-accent tabular-nums leading-none">
+                  {totalBelumEssay} <span className="text-sm text-accent/70 font-medium ml-1">Jawaban</span>
+                </span>
+              </div>
             </div>
-            <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-0.5">Belum Dinilai</span>
-              <span className="text-xl font-medium text-accent tabular-nums leading-none">
-                {totalBelumEssay} <span className="text-sm text-accent/70 font-medium ml-1">Jawaban</span>
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
+
 
       {/* Data List (Concentric Borders Math & Advanced Soft Shadow) */}
       <div className="p-1.5 rounded-[20px] border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 shadow-sleek">
@@ -191,6 +187,6 @@ function EvaluasiList() {
           )}
         </div>
       </div>
-    </div>
+    </AdminPage>
   );
 }
