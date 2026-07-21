@@ -77,13 +77,6 @@ function CommandCenter() {
       <section className="relative overflow-hidden rounded-[22px] bg-white dark:bg-slate-900 p-8 sm:p-10 border border-slate-200 dark:border-slate-800 shadow-sleek">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="space-y-4 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              Sistem Aktif
-            </div>
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-slate-900 dark:text-white">
               Selamat datang kembali, <br className="hidden sm:block" />
               <span>{user.namaLengkap}</span>
