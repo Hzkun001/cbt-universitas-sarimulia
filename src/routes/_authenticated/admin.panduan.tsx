@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { configRepo } from "@/lib/cbt/repos";
+import { AdminPage, AdminPageHeader } from "@/components/cbt/AdminPage";
 
 export const Route = createFileRoute("/_authenticated/admin/panduan")({
   component: PanduanPage,
@@ -45,16 +46,11 @@ function PanduanPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 pb-20">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-zinc-100">
-          Panduan Penggunaan
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-zinc-400">
-          Referensi lengkap {cfg.appName} — dari pembuatan soal hingga evaluasi hasil.
-        </p>
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Panduan Penggunaan"
+        description={`Referensi lengkap ${cfg.appName} — dari pembuatan soal hingga evaluasi hasil.`}
+      />
 
       <div className="flex gap-8 items-start">
         {/* Main Content */}
@@ -340,7 +336,7 @@ function PanduanPage() {
           </ul>
         </nav>
       </div>
-    </div>
+    </AdminPage>
   );
 }
 

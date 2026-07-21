@@ -23,6 +23,7 @@ import {
 import { ensureSeed } from "@/lib/cbt/seed";
 import { Download, Upload, Trash2, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { AdminPage, AdminPageHeader } from "@/components/cbt/AdminPage";
 
 export const Route = createFileRoute("/_authenticated/admin/tools")({
   component: ToolsPage,
@@ -89,17 +90,11 @@ function ToolsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 pb-20">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-zinc-100">
-            Alat Sistem
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400">
-            Fasilitas pencadangan data (backup), pemulihan (restore), dan pengaturan ulang pangkalan data.
-          </p>
-        </div>
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Alat Sistem"
+        description="Fasilitas pencadangan data (backup), pemulihan (restore), dan pengaturan ulang pangkalan data."
+      />
 
       {/* Section 1: Backup & Restore */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-12">
@@ -329,6 +324,6 @@ function ToolsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminPage>
   );
 }

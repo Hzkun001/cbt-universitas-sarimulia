@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Settings, Upload, Image as ImageIcon, Save } from "lucide-react";
 import { toast } from "sonner";
+import { AdminPage, AdminPageHeader } from "@/components/cbt/AdminPage";
 
 export const Route = createFileRoute("/_authenticated/admin/pengaturan")({
   loader: async () => {
@@ -57,20 +58,16 @@ function PengaturanPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 pb-20">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-zinc-100">
-            Pengaturan Aplikasi
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400">
-            Konfigurasi institusi, keamanan, browser ujian, dan branding CBT.
-          </p>
-        </div>
-        <Button onClick={save} className="h-10 px-8 shadow-sm">
-          Simpan Semua
-        </Button>
-      </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Pengaturan Aplikasi"
+        description="Konfigurasi institusi, keamanan, browser ujian, dan branding CBT."
+        action={
+          <Button onClick={save} className="h-10 px-8 shadow-sm">
+            Simpan Semua
+          </Button>
+        }
+      />
 
       {/* Section 1: Identitas Aplikasi */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-12">
@@ -180,7 +177,7 @@ function PengaturanPage() {
         </div>
       </div>
 
-    </div>
+    </AdminPage>
   );
 }
 
