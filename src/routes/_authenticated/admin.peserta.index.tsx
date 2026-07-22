@@ -60,8 +60,8 @@ function PesertaPage() {
     
     toast.info("Memproses file Excel, mohon tunggu...");
     let added = 0;
+    const newGroups: Group[] = [];
     
-    // We update local state first for optimistic UI, but wait, it's safer to just refresh at the end.
     for (const r of rows) {
       const username = String(r.username ?? r.Username ?? "").trim();
       const nama = String(r.nama ?? r.Nama ?? r.namaLengkap ?? "").trim();
@@ -72,10 +72,12 @@ function PesertaPage() {
       
       let groupId: string | undefined;
       if (groupName) {
-        let g = groups.find((x) => x.nama.toLowerCase() === groupName.toLowerCase());
+        let g = [...groups, ...newGroups].find((x) => x.nama.toLowerCase() === groupName.toLowerCase());
         if (!g) { 
           g = { id: uid("g_"), nama: groupName, keterangan: "" }; 
-          await mutateGroupServer({ data: { action: "upsert", payload: g } });
+          const gRes = await mutateGroupServer({ data: { action: "upsert", payload: g } });
+          if (!gRes.ok) continue;
+          newGroups.push(g);
           setGroups(prev => [...prev, g!]);
         }
         groupId = g.id;
