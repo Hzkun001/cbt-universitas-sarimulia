@@ -187,3 +187,37 @@ export const mutateSesiServer = createServerFn({ method: "POST" })
 			};
 		}
 	});
+
+export const getLiveOnlineSesis = createServerFn({ method: "GET" }).handler(
+	async () => {
+		const caller = await requireCaller();
+		if (!caller || (caller.role !== "super_admin" && caller.role !== "admin_prodi" && caller.role !== "evaluator")) {
+			return [];
+		}
+
+		const rows = await prisma.sesiUjian.findMany({
+			where: { status: "sedang" },
+			include: {
+				peserta: {
+					select: { namaLengkap: true }
+				},
+				ujian: {
+					select: { nama: true }
+				}
+			}
+		});
+
+		// We need to parse json fields to return standard objects
+		return rows.map(r => ({
+			id: r.id,
+			pesertaId: r.pesertaId,
+			ujianId: r.ujianId,
+			endsAt: Number(r.endsAt),
+			soalIds: (typeof r.soalIds === "string" ? JSON.parse(r.soalIds) : r.soalIds) as string[],
+			jawaban: (typeof r.jawaban === "string" ? JSON.parse(r.jawaban) : r.jawaban) as any[],
+			pelanggaran: r.pelanggaran,
+			u: { namaLengkap: r.peserta.namaLengkap },
+			ex: { nama: r.ujian.nama },
+		}));
+	}
+);

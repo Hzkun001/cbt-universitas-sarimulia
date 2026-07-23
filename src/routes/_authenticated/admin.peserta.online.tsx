@@ -1,11 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState, useMemo } from "react";
-import { sesiRepo, ujianRepo, usersRepo } from "@/lib/cbt/repos";
+import { getLiveOnlineSesis } from "@/lib/server/sesi/functions";
 import { Activity, AlertTriangle, Users, Timer, CheckCircle2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/admin/peserta/online")({
   component: OnlinePage,
+  loader: async () => {
+    const rawSesis = await getLiveOnlineSesis();
+    return { rawSesis };
+  }
 });
 
 function fmtSisa(ms: number): string {
@@ -16,50 +20,53 @@ function fmtSisa(ms: number): string {
 }
 
 function OnlinePage() {
+  const { rawSesis } = Route.useLoaderData();
+  const router = useRouter();
   const [, tick] = useState(0);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     // Refresh interval lowered to 1s for real-time countdown feel
     const t = window.setInterval(() => tick((x) => x + 1), 1000);
-    return () => window.clearInterval(t);
-  }, []);
+    
+    // Poll the server every 10 seconds to get fresh data
+    const poll = window.setInterval(() => {
+      router.invalidate();
+    }, 10000);
 
-  const { sesis, ujians, users, totalPelanggaran, avgProgress } = useMemo(() => {
-    const rawSesis = sesiRepo.all().filter((s) => s.status === "sedang");
-    const ujians = ujianRepo.all();
-    const users = usersRepo.all();
+    return () => {
+      window.clearInterval(t);
+      window.clearInterval(poll);
+    };
+  }, [router]);
 
+  const { sesis, totalPelanggaran, avgProgress } = useMemo(() => {
     let violations = 0;
     let totalPct = 0;
 
     const enriched = rawSesis.map((s) => {
-      const u = users.find((x) => x.id === s.pesertaId);
-      const ex = ujians.find((x) => x.id === s.ujianId);
-      const dijawab = s.jawaban.filter((j) => j.jawabanIds.length > 0 || j.jawabanEssay.length > 0).length;
+      const dijawab = s.jawaban.filter((j: any) => j.jawabanIds?.length > 0 || j.jawabanEssay?.length > 0).length;
       const totalSoal = s.soalIds.length || 1;
       const progress = (dijawab / totalSoal) * 100;
       
       violations += s.pelanggaran;
       totalPct += progress;
 
-      return { s, u, ex, dijawab, totalSoal, progress };
+      return { s, dijawab, totalSoal, progress };
     });
 
-    const filtered = enriched.filter(({ u, ex }) => 
-      (u?.namaLengkap || "").toLowerCase().includes(search.toLowerCase()) ||
-      (ex?.nama || "").toLowerCase().includes(search.toLowerCase())
+    const filtered = enriched.filter(({ s }) => 
+      (s.u?.namaLengkap || "").toLowerCase().includes(search.toLowerCase()) ||
+      (s.ex?.nama || "").toLowerCase().includes(search.toLowerCase())
     );
 
     return {
       sesis: filtered,
-      ujians,
-      users,
       totalPelanggaran: violations,
       avgProgress: rawSesis.length > 0 ? totalPct / rawSesis.length : 0
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tick, search]); // Re-compute on tick to keep timers smooth
+  }, [rawSesis, search, tick]); // Re-compute on tick to keep timers smooth
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 animate-in fade-in duration-500 pb-12 pt-4">
@@ -87,7 +94,7 @@ function OnlinePage() {
           </div>
           <div>
             <div className="text-sm font-medium text-slate-500">Sesi Aktif</div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">{sesis.length} <span className="text-sm font-normal text-slate-400">peserta</span></div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{rawSesis.length} <span className="text-sm font-normal text-slate-400">peserta</span></div>
           </div>
         </div>
         
@@ -129,7 +136,7 @@ function OnlinePage() {
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 overflow-hidden">
           <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60">
-            {sesis.map(({ s, u, ex, dijawab, totalSoal, progress }) => {
+            {sesis.map(({ s, dijawab, totalSoal, progress }) => {
               const sisaMs = s.endsAt ? Math.max(0, s.endsAt - Date.now()) : 0;
               const isCritical = sisaMs > 0 && sisaMs < 300000; // < 5 mins
               
@@ -142,8 +149,8 @@ function OnlinePage() {
                       <Users className="h-5 w-5 text-slate-500" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">{u?.namaLengkap ?? "Unknown"}</h3>
-                      <div className="text-xs text-slate-500 truncate mt-0.5">{ex?.nama ?? "Unknown Exam"}</div>
+                      <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">{s.u?.namaLengkap ?? "Unknown"}</h3>
+                      <div className="text-xs text-slate-500 truncate mt-0.5">{s.ex?.nama ?? "Unknown Exam"}</div>
                     </div>
                   </div>
 

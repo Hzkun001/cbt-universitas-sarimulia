@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
-import { groupsRepo, usersRepo } from "@/lib/cbt/repos";
+import { getGroupsList, getUsersList, mutateGroupServer } from "@/lib/server/users/functions";
 import { uid } from "@/lib/cbt/storage";
 import type { Group } from "@/lib/cbt/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,22 +11,61 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/peserta/group")({
   component: GroupPage,
+  loader: async () => {
+    const [allGroups, allUsers] = await Promise.all([
+      getGroupsList(),
+      getUsersList(),
+    ]);
+    return { allGroups, allUsers };
+  }
 });
 
 function GroupPage() {
-  const [groups, setGroups] = useState<Group[]>(groupsRepo.all());
+  const { allGroups, allUsers } = Route.useLoaderData();
+  const router = useRouter();
+  
+  // Local optimistic state
+  const [groups, setGroups] = useState<Group[]>(allGroups);
   const [nama, setNama] = useState("");
-  const peserta = usersRepo.all().filter((u) => u.role === "mahasiswa");
+  const peserta = allUsers.filter((u) => u.role === "mahasiswa");
 
-  function add() {
+  async function add() {
     if (!nama.trim()) return;
-    groupsRepo.upsert({ id: uid("g_"), nama: nama.trim(), keterangan: "" });
-    setNama(""); setGroups(groupsRepo.all()); toast.success("Group ditambahkan");
+    const newGroup = { id: uid("g_"), nama: nama.trim(), keterangan: "" };
+    
+    // Optimistic UI
+    setGroups(prev => [...prev, newGroup]);
+    setNama("");
+    
+    const res = await mutateGroupServer({ data: { action: "upsert", payload: newGroup } });
+    if (res.ok) {
+      toast.success("Group ditambahkan");
+      await router.invalidate();
+    } else {
+      toast.error(res.error || "Gagal menambahkan group");
+      // revert
+      setGroups(allGroups);
+    }
   }
-  function remove(id: string) {
-    if (peserta.some((p) => p.groupId === id)) { toast.error("Masih ada peserta dalam group ini"); return; }
+
+  async function remove(id: string) {
+    if (peserta.some((p) => p.groupId === id)) { 
+      toast.error("Masih ada peserta dalam group ini"); 
+      return; 
+    }
     if (!confirm("Hapus group?")) return;
-    groupsRepo.remove(id); setGroups(groupsRepo.all());
+    
+    // Optimistic UI
+    setGroups(prev => prev.filter(g => g.id !== id));
+    
+    const res = await mutateGroupServer({ data: { action: "remove", payload: { id } } });
+    if (res.ok) {
+      await router.invalidate();
+    } else {
+      toast.error(res.error || "Gagal menghapus group");
+      // revert
+      setGroups(allGroups);
+    }
   }
 
   return (

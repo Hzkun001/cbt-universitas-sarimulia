@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { groupsRepo, usersRepo, configRepo } from "@/lib/cbt/repos";
+import { getGroupsList, getUsersList } from "@/lib/server/users/functions";
+import { getPublicBootConfigServer } from "@/lib/server/snapshot/functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,13 +9,21 @@ import { Printer } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/peserta/kartu")({
   component: KartuPage,
+  loader: async () => {
+    const [groups, users, config] = await Promise.all([
+      getGroupsList(),
+      getUsersList(),
+      getPublicBootConfigServer(),
+    ]);
+    return { groups, users, config };
+  }
 });
 
 function KartuPage() {
+  const { groups, users, config } = Route.useLoaderData();
   const [groupId, setGroupId] = useState<string>("all");
-  const groups = groupsRepo.all();
-  const peserta = usersRepo.all().filter((u) => u.role === "mahasiswa" && (groupId === "all" || u.groupId === groupId));
-  const appName = configRepo.get().appName;
+  const peserta = users.filter((u) => u.role === "mahasiswa" && (groupId === "all" || u.groupId === groupId));
+  const appName = config?.appName || "CBT";
 
   return (
     <div className="space-y-4">
