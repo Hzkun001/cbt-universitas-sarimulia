@@ -413,9 +413,7 @@ export const getFullConfigServer = createServerFn({ method: "GET" }).handler(
 	async () => {
 		const caller = await requireCaller();
 		if (!caller) return [];
-		const rows = await prisma.ujian.findMany({
-			include: { ujianUnit: true }
-		});
+		const rows = await prisma.ujian.findMany();
 		return rows.map(mapUjian);
 	}
 );

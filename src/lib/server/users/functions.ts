@@ -197,7 +197,10 @@ export const getUsersList = createServerFn({ method: "GET" }).handler(
 			role: u.role,
 			aktif: u.aktif,
 			unitId: u.unitId ?? undefined,
-			allowedTopikIds: typeof u.allowedTopikIds === "string" ? JSON.parse(u.allowedTopikIds) : u.allowedTopikIds,
+			allowedTopikIds: typeof u.allowedTopikIds === "string" ? JSON.parse(u.allowedTopikIds) : u.allowedTopikIds || [],
+			mataKuliahIds: typeof u.mataKuliahIds === "string" ? JSON.parse(u.mataKuliahIds) : u.mataKuliahIds || [],
+			passwordHash: "",
+			detail: u.detail ?? undefined,
 			createdAt: Number(u.createdAt)
 		}));
 	}
